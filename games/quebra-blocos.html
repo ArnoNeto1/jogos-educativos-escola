@@ -49,6 +49,14 @@
   }
   .overlay.mostrar { display: flex; }
   .overlay h2 { margin: 0; font-size: 1.5rem; }
+  .placar-turma {
+    background: rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;
+    width: 100%; max-width: 260px; margin: 4px 0;
+  }
+  .placar-titulo { margin: 0 0 6px; font-weight: 700; font-size: 0.9rem; }
+  .placar-turma ol { margin: 0; padding-left: 20px; text-align: left; font-size: 0.85rem; }
+  .placar-turma li { margin-bottom: 2px; }
+  .placar-carregando { opacity: 0.7; list-style: none; margin-left: -20px; }
   button.acao {
     background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
     padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
@@ -79,11 +87,18 @@
   <div class="overlay" id="overlay">
     <h2 id="overlayTitulo">Fim de jogo!</h2>
     <p id="overlayResumo"></p>
+    <div class="placar-turma" id="placarTurma">
+      <p class="placar-titulo">🏆 Placar da turma</p>
+      <ol id="placarLista"><li class="placar-carregando">Carregando...</li></ol>
+    </div>
     <button class="acao" id="btnReiniciar">🔄 Jogar novamente</button>
   </div>
 </div>
 <p class="dica">💡 Use as setas ⬅️➡️ ou arraste o dedo/mouse pra mover a raquete.</p>
 
+<script src="../lib/supabase.min.js"></script>
+<script src="../lib/supabase-config.js"></script>
+<script src="../lib/placar.js"></script>
 <script>
   var CANVAS_W = 420, CANVAS_H = 500;
   var CHAVE_RECORDE = "quebraBlocos_recorde";
@@ -248,6 +263,32 @@
     overlayTitulo.textContent = venceu ? "🎉 Você quebrou tudo!" : "💥 Fim de jogo!";
     overlayResumo.textContent = "Pontos: " + pontuacao + (bateuRecorde ? " • 🎉 Novo recorde!" : "");
     overlay.classList.add("mostrar");
+    atualizarPlacarTurma(pontuacao);
+  }
+
+  // Envia a pontuação pro placar compartilhado da turma (Supabase) e mostra o top 10
+  // daquele nível. Sem internet ou banco fora do ar, o jogo continua normal.
+  function atualizarPlacarTurma(pontuacaoFinal) {
+    var listaEl = document.getElementById("placarLista");
+    if (typeof enviarRecordePlacar === "function") {
+      enviarRecordePlacar({ jogo: "quebra-blocos", nivel: nivelEscolhido, pontuacao: pontuacaoFinal });
+    }
+    if (typeof buscarPlacar !== "function") return;
+    buscarPlacar({ jogo: "quebra-blocos", nivel: nivelEscolhido }).then(function (lista) {
+      if (!lista.length) {
+        listaEl.innerHTML = '<li class="placar-carregando">Seja o(a) primeiro(a) no placar!</li>';
+        return;
+      }
+      listaEl.innerHTML = lista.map(function (item) {
+        return "<li>" + escapeHtml(item.nome_aluno) + " — " + item.pontuacao + "</li>";
+      }).join("");
+    });
+  }
+
+  function escapeHtml(texto) {
+    var div = document.createElement("div");
+    div.textContent = texto;
+    return div.innerHTML;
   }
 
   function desenhar() {

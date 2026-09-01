@@ -46,6 +46,7 @@ export class LapTimer {
 	constructor( cells, trackId ) {
 
 		this.storageKey = STORAGE_PREFIX + ( trackId || 'default' );
+		this.nivel = trackId || 'default';
 		this.lap = 1;
 		this.bestLap = loadBest( this.storageKey );
 		this.lastLap = null;
@@ -110,6 +111,10 @@ export class LapTimer {
 			#lap-timer .label { opacity: 0.65; font-weight: 500; letter-spacing: 0.06em; }
 			#lap-timer .current { font: 700 24px/1.1 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums; margin: 4px 0 6px; }
 			#lap-timer .stat { font-size: 12px; font-variant-numeric: tabular-nums; opacity: 0.9; }
+			#lap-timer .placar { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); }
+			#lap-timer .placar-titulo { font-size: 11px; opacity: 0.65; font-weight: 500; letter-spacing: 0.06em; margin-bottom: 4px; }
+			#lap-timer .placar ol { margin: 0; padding-left: 16px; font-size: 12px; }
+			#lap-timer .placar li { margin-bottom: 2px; }
 		`;
 		document.head.appendChild( style );
 
@@ -120,13 +125,56 @@ export class LapTimer {
 			'<div class="row"><span class="label">LAP</span><span class="lap">1</span></div>' +
 			`<div class="current">${ placeholder }</div>` +
 			`<div class="row stat"><span class="label">LAST</span><span class="last">${ placeholder }</span></div>` +
-			`<div class="row stat"><span class="label">BEST</span><span class="best">${ formatTime( this.bestLap ) }</span></div>`;
+			`<div class="row stat"><span class="label">BEST</span><span class="best">${ formatTime( this.bestLap ) }</span></div>` +
+			'<div class="placar"><div class="placar-titulo">🏆 PLACAR DA TURMA</div><ol class="placar-lista"><li>Carregando...</li></ol></div>';
 		document.body.appendChild( el );
 
 		this.lapEl = el.querySelector( '.lap' );
 		this.currentEl = el.querySelector( '.current' );
 		this.lastEl = el.querySelector( '.last' );
 		this.bestEl = el.querySelector( '.best' );
+		this.placarListaEl = el.querySelector( '.placar-lista' );
+
+		this.atualizarPlacarTurma();
+
+	}
+
+	// Envia o tempo de volta pro placar compartilhado da turma (Supabase) e mostra o
+	// top 5 daquele nível. enviarRecordePlacar/buscarPlacar vêm de lib/placar.js
+	// (carregado como script global antes deste módulo) — se não existirem (ex.:
+	// sem internet na hora de carregar a página), o cronômetro continua normal.
+	atualizarPlacarTurma( tempoRecemCompletado ) {
+
+		if ( typeof window.enviarRecordePlacar === 'function' && tempoRecemCompletado !== undefined ) {
+
+			window.enviarRecordePlacar( {
+				jogo: 'corrida-kart',
+				nivel: this.nivel,
+				pontuacao: Math.round( tempoRecemCompletado * 100 ) / 100,
+				tipoPontuacao: 'tempo'
+			} );
+
+		}
+
+		if ( typeof window.buscarPlacar !== 'function' || ! this.placarListaEl ) return;
+
+		window.buscarPlacar( { jogo: 'corrida-kart', nivel: this.nivel, tipoPontuacao: 'tempo', limite: 5 } ).then( ( lista ) => {
+
+			if ( ! lista.length ) {
+
+				this.placarListaEl.innerHTML = '<li>Seja o(a) primeiro(a)!</li>';
+				return;
+
+			}
+
+			this.placarListaEl.innerHTML = lista.map( ( item ) => {
+
+				const nomeSeguro = String( item.nome_aluno ).replace( /[<>&]/g, ( c ) => ( { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[ c ] ) );
+				return `<li>${ nomeSeguro } — ${ formatTime( item.pontuacao ) }</li>`;
+
+			} ).join( '' );
+
+		} );
 
 	}
 
@@ -170,6 +218,7 @@ export class LapTimer {
 	completeLap() {
 
 		const isBest = this.bestLap === null || this.currentLapTime < this.bestLap;
+		const tempoDaVolta = this.currentLapTime;
 
 		this.lastLap = this.currentLapTime;
 		if ( isBest ) {
@@ -190,6 +239,8 @@ export class LapTimer {
 			[ { color }, { color }, { color: '#fff' } ],
 			{ duration: 1200, easing: 'ease-out' }
 		);
+
+		this.atualizarPlacarTurma( tempoDaVolta );
 
 	}
 
