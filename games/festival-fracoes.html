@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Festival de Frações</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#fff7ed; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: #ea580c;
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 20px; font-size: 1rem; }
+  .escondido { display: none !important; }
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(234,88,12,0.14);
+    width: 100%; max-width: 440px; text-align: center;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; width: 100%; margin-bottom: 12px; display: block;
+  }
+  .btn-nivel:hover { background: #ffedd5; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+  .pergunta-texto { font-weight: 700; margin-bottom: 14px; }
+  svg#pizza { display: block; margin: 0 auto 18px; }
+  .alternativas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alt-btn {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.4rem; font-weight: 800; color: #1e293b;
+    padding: 16px 0; cursor: pointer;
+  }
+  .alt-btn:hover:not(:disabled) { background: #ffedd5; }
+  .alt-btn:disabled { cursor: default; }
+  .alt-btn.certa { background: var(--verde); color: white; }
+  .alt-btn.errada { background: var(--vermelho); color: white; }
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: #ea580c; margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🍕 Festival de Frações</h1>
+<p class="instrucoes">Veja quantas fatias da pizza estão coloridas e escolha a fração certa!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — pizzas de 2 a 4 fatias</small></button>
+  <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — pizzas de 2 a 6 fatias</small></button>
+  <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — pizzas de 4 a 10 fatias, opções parecidas</small></button>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+  <div id="telaQuiz">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="pergunta-texto">Que fração da pizza está colorida?</div>
+    <svg id="pizza" width="180" height="180" viewBox="0 0 180 180"></svg>
+    <div class="alternativas" id="alternativas"></div>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+  var TOTAL_PERGUNTAS = 10;
+  var NIVEIS = {
+    facil: { fatiasMin: 2, fatiasMax: 4 },
+    medio: { fatiasMin: 2, fatiasMax: 6 },
+    dificil: { fatiasMin: 4, fatiasMax: 10 }
+  };
+  var nivelEscolhido = "medio";
+
+  var telaQuiz = document.getElementById("telaQuiz");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var pizzaEl = document.getElementById("pizza");
+  var alternativasEl = document.getElementById("alternativas");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var perguntas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function mdc(a, b) { return b === 0 ? a : mdc(b, a % b); }
+
+  function gerarPergunta(config) {
+    var fatias = Math.floor(Math.random() * (config.fatiasMax - config.fatiasMin + 1)) + config.fatiasMin;
+    var coloridas = Math.floor(Math.random() * (fatias - 1)) + 1; // 1 até fatias-1 (nunca 0 nem tudo)
+    return { fatias: fatias, coloridas: coloridas };
+  }
+
+  function gerarPerguntas() {
+    var config = NIVEIS[nivelEscolhido];
+    var lista = [];
+    for (var i = 0; i < TOTAL_PERGUNTAS; i++) lista.push(gerarPergunta(config));
+    return lista;
+  }
+
+  function desenharPizza(fatias, coloridas) {
+    var ns = "http://www.w3.org/2000/svg";
+    pizzaEl.innerHTML = "";
+    var cx = 90, cy = 90, raio = 85;
+    for (var i = 0; i < fatias; i++) {
+      var anguloIni = (i / fatias) * Math.PI * 2 - Math.PI / 2;
+      var anguloFim = ((i + 1) / fatias) * Math.PI * 2 - Math.PI / 2;
+      var x1 = cx + Math.cos(anguloIni) * raio, y1 = cy + Math.sin(anguloIni) * raio;
+      var x2 = cx + Math.cos(anguloFim) * raio, y2 = cy + Math.sin(anguloFim) * raio;
+      var arcoGrande = (anguloFim - anguloIni) > Math.PI ? 1 : 0;
+      var caminho = document.createElementNS(ns, "path");
+      caminho.setAttribute("d", "M " + cx + " " + cy + " L " + x1 + " " + y1 + " A " + raio + " " + raio + " 0 " + arcoGrande + " 1 " + x2 + " " + y2 + " Z");
+      caminho.setAttribute("fill", i < coloridas ? "#f97316" : "#fed7aa");
+      caminho.setAttribute("stroke", "white");
+      caminho.setAttribute("stroke-width", "2");
+      pizzaEl.appendChild(caminho);
+    }
+  }
+
+  function textoFracao(num, den) {
+    return num + "/" + den;
+  }
+
+  function gerarAlternativas(coloridas, fatias) {
+    var opcoesTexto = [textoFracao(coloridas, fatias)];
+    var candidatos = [];
+    // decoys plausíveis: numerador +-1, denominador +-1, e a fração "espelhada" (fatias - coloridas)
+    [coloridas - 1, coloridas + 1].forEach(function (n) { if (n >= 1 && n < fatias) candidatos.push(textoFracao(n, fatias)); });
+    [fatias - 1, fatias + 1].forEach(function (d) { if (d > coloridas && d >= 2) candidatos.push(textoFracao(coloridas, d)); });
+    candidatos.push(textoFracao(fatias - coloridas, fatias));
+
+    candidatos = embaralhar(candidatos);
+    for (var i = 0; i < candidatos.length && opcoesTexto.length < 4; i++) {
+      if (opcoesTexto.indexOf(candidatos[i]) === -1) opcoesTexto.push(candidatos[i]);
+    }
+    // preenche com frações aleatórias simples se ainda faltar opção
+    var tentativas = 0;
+    while (opcoesTexto.length < 4 && tentativas < 100) {
+      tentativas++;
+      var denAleatorio = 2 + Math.floor(Math.random() * 9);
+      var numAleatorio = 1 + Math.floor(Math.random() * (denAleatorio - 1));
+      var texto = textoFracao(numAleatorio, denAleatorio);
+      if (opcoesTexto.indexOf(texto) === -1) opcoesTexto.push(texto);
+    }
+    return embaralhar(opcoesTexto);
+  }
+
+  function iniciarQuiz(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    perguntas = gerarPerguntas();
+    indiceAtual = 0;
+    acertos = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaQuiz.classList.remove("escondido");
+    mostrarPergunta();
+  }
+
+  function mostrarPergunta() {
+    var p = perguntas[indiceAtual];
+    progressoEl.textContent = "Pergunta " + (indiceAtual + 1) + " de " + perguntas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    desenharPizza(p.fatias, p.coloridas);
+
+    var respostaCorreta = textoFracao(p.coloridas, p.fatias);
+    var opcoes = gerarAlternativas(p.coloridas, p.fatias);
+    alternativasEl.innerHTML = "";
+    opcoes.forEach(function (opcao) {
+      var btn = document.createElement("button");
+      btn.className = "alt-btn";
+      btn.textContent = opcao;
+      btn.addEventListener("click", function () { responder(opcao, respostaCorreta, btn); });
+      alternativasEl.appendChild(btn);
+    });
+  }
+
+  function responder(escolhida, correta, botaoClicado) {
+    var botoes = alternativasEl.querySelectorAll(".alt-btn");
+    botoes.forEach(function (b) { b.disabled = true; });
+
+    if (escolhida === correta) {
+      acertos++;
+      botaoClicado.classList.add("certa");
+    } else {
+      botaoClicado.classList.add("errada");
+      botoes.forEach(function (b) {
+        if (b.textContent === correta) b.classList.add("certa");
+      });
+    }
+
+    setTimeout(function () {
+      indiceAtual++;
+      if (indiceAtual < perguntas.length) {
+        mostrarPergunta();
+      } else {
+        mostrarResultado();
+      }
+    }, 1100);
+  }
+
+  function mostrarResultado() {
+    telaQuiz.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / perguntas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + perguntas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🍕 Você é um(a) mestre das frações!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem!";
+    else resultadoTitulo.textContent = "💪 Continue praticando!";
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarQuiz(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

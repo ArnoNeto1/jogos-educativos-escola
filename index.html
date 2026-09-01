@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogos Educativos da Escola</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topo">
+  <h1>🎓 Jogos Educativos</h1>
+  <p>Aprender brincando! Escolha um jogo e divirta-se.</p>
+</header>
+
+<main>
+  <div class="filtros">
+    <button class="filtro-btn ativo" data-materia="Todos">Todos</button>
+    <button class="filtro-btn" data-materia="Português">Português</button>
+    <button class="filtro-btn" data-materia="Matemática">Matemática</button>
+    <button class="filtro-btn" data-materia="Geral">Geral</button>
+    <button class="filtro-btn" data-materia="Geografia">Geografia</button>
+    <button class="filtro-btn" data-materia="História">História</button>
+    <button class="filtro-btn" data-materia="Educação Digital">Educação Digital</button>
+    <button class="filtro-btn" data-materia="Ciências">Ciências</button>
+    <button class="filtro-btn" data-materia="Inglês">Inglês</button>
+    <button class="filtro-btn" data-materia="Música">Música</button>
+  </div>
+
+  <div class="grade" id="grade"></div>
+</main>
+
+<footer>
+  Feito para os alunos. Sem anúncios, sem coleta de dados.
+</footer>
+
+<script src="data/games.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

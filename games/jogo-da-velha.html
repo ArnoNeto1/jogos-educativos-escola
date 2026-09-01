@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogo da Velha</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+
+  .cartao-config {
+    background: white; border-radius: 20px; padding: 26px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 420px; text-align: center;
+  }
+  .cartao-config h2 { margin: 0 0 16px; font-size: 1.2rem; }
+  .opcoes-config { display: flex; flex-direction: column; gap: 12px; }
+  .btn-config {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer;
+  }
+  .btn-config:hover { background: #dbeafe; }
+  .cartao-config input {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 2px solid #cbd5e1;
+    font-size: 1rem; margin-bottom: 12px; text-align: center;
+  }
+  .cartao-config .btn-primario {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; width: 100%;
+  }
+  #statusRede { margin-top: 12px; font-weight: 700; color: #6d28d9; min-height: 1.4em; }
+  .btn-voltar-config { margin-top: 14px; background: none; border: none; color: var(--azul); font-weight: 700; cursor: pointer; }
+
+  .placar {
+    display: flex; gap: 24px; font-weight: 700; font-size: 1.1rem;
+    background: white; padding: 12px 24px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 18px;
+  }
+  .placar span.x { color: var(--azul); }
+  .placar span.o { color: var(--vermelho); }
+  .vez { font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; min-height: 1.4em; text-align: center; }
+  .tabuleiro {
+    display: grid;
+    grid-template-columns: repeat(3, 96px);
+    grid-template-rows: repeat(3, 96px);
+    gap: 10px;
+    background: white;
+    padding: 14px;
+    border-radius: 20px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.15);
+  }
+  .celula {
+    background: var(--fundo);
+    border: none;
+    border-radius: 14px;
+    font-size: 2.6rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--azul);
+    transition: transform 0.1s ease, background 0.15s ease;
+  }
+  .celula:hover:not(:disabled) { background: #dbeafe; transform: scale(1.03); }
+  .celula.o { color: var(--vermelho); }
+  .celula:disabled { cursor: default; }
+  .celula.vencedora { background: var(--amarelo) !important; }
+  .controles { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; justify-content: center; }
+  button.reiniciar {
+    background: var(--verde);
+    color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  }
+  button.reiniciar:hover { filter: brightness(1.05); }
+  button.secundario {
+    background: white; color: var(--azul); border: 2px solid var(--azul); font-weight: 700; font-size: 0.95rem;
+    padding: 10px 22px; border-radius: 999px; cursor: pointer;
+  }
+  @media (max-width: 400px) {
+    .tabuleiro { grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); }
+    .celula { font-size: 2.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<div id="avisoRedeCaida" class="escondido" style="position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:60; background:#dc2626; color:white; font-weight:700; font-size:0.9rem; padding:10px 20px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,0.35); text-align:center; max-width:90vw;">
+  ⚠️ Conexão com o servidor perdida.
+  <button id="btnRecarregarRede" style="margin-left:8px; background:white; color:#dc2626; border:none; border-radius:999px; padding:4px 12px; font-weight:700; cursor:pointer;">Recarregar</button>
+</div>
+<h1>❌ Jogo da Velha ⭕</h1>
+<p class="instrucoes">Complete uma linha, coluna ou diagonal para vencer!</p>
+
+<div id="telaModo" class="cartao-config">
+  <h2>Como você quer jogar?</h2>
+  <div class="opcoes-config">
+    <button class="btn-config" id="btnModoLocal">🧑‍🤝‍🧑 Dois jogadores (mesmo aparelho)</button>
+    <button class="btn-config" id="btnContraComputador">🤖 Contra o computador</button>
+    <button class="btn-config" id="btnModoRede">🌐 Jogar em rede (outro computador)</button>
+  </div>
+</div>
+
+<div id="telaConfigDificuldade" class="cartao-config escondido">
+  <h2>Escolha o nível</h2>
+  <div class="opcoes-config">
+    <button class="btn-config" data-dificuldade="facil">🟢 Fácil (1º ao 3º ano)<br><small style="font-weight:400; color:#64748b;">O computador joga ao acaso</small></button>
+    <button class="btn-config" data-dificuldade="medio">🟡 Médio (4º ao 6º ano)<br><small style="font-weight:400; color:#64748b;">Ataca e bloqueia, mas às vezes erra</small></button>
+    <button class="btn-config" data-dificuldade="dificil">🔴 Difícil (7º ao 9º ano)<br><small style="font-weight:400; color:#64748b;">Jogo perfeito — no máximo empata!</small></button>
+  </div>
+  <button class="btn-voltar-config" id="btnVoltarModoDificuldade">⬅ Voltar</button>
+</div>
+
+<div id="telaSala" class="cartao-config escondido">
+  <h2>🌐 Jogar em rede</h2>
+  <p style="color:#475569; font-size:0.9rem; margin-top:0;">
+    Combine um código de sala com seu colega (ex: "turma1") e digite o mesmo código nos dois computadores.
+  </p>
+  <input type="text" id="inputSala" placeholder="Código da sala" maxlength="30">
+  <button class="btn-primario" id="btnEntrarSala">Entrar na sala</button>
+  <p id="statusRede"></p>
+  <button class="btn-voltar-config" id="btnVoltarModo">⬅ Voltar</button>
+</div>
+
+<div id="areaJogo" class="escondido" style="display:flex; flex-direction:column; align-items:center;">
+  <div class="placar">
+    <span class="x">❌ Jogador 1: <span id="pontosX">0</span></span>
+    <span class="o">⭕ Jogador 2: <span id="pontosO">0</span></span>
+  </div>
+
+  <div class="vez" id="vez"></div>
+
+  <div class="tabuleiro" id="tabuleiro"></div>
+
+  <div class="controles">
+    <button class="reiniciar" id="btnReiniciar">🔄 Jogar novamente</button>
+    <button class="secundario" id="btnTrocarModo">⚙️ Trocar modo</button>
+  </div>
+</div>
+
+<script src="../lib/rede.js"></script>
+<script>
+  var LINHAS_VITORIA = [
+    [0,1,2], [3,4,5], [6,7,8], // linhas
+    [0,3,6], [1,4,7], [2,5,8], // colunas
+    [0,4,8], [2,4,6]           // diagonais
+  ];
+
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var vezEl = document.getElementById("vez");
+  var pontosXEl = document.getElementById("pontosX");
+  var pontosOEl = document.getElementById("pontosO");
+  var btnReiniciar = document.getElementById("btnReiniciar");
+
+  var celulas = []; // estado: "" | "X" | "O"
+  var jogadorAtual = "X";
+  var jogoAcabou = false;
+  var placar = { X: 0, O: 0 };
+
+  var modoJogo = "local"; // "local" | "computador" | "rede"
+  var meuSimbolo = null;
+  var rede = null;
+  var SIMBOLO_COMPUTADOR = "O"; // o aluno sempre joga de ❌ (X) contra o computador
+  var dificuldadeComputador = "medio";
+  var computadorPensando = false;
+
+  function nomeDoJogador(simbolo) {
+    if (modoJogo === "rede") return simbolo === meuSimbolo ? "Você" : "o adversário";
+    if (modoJogo === "computador") return simbolo === SIMBOLO_COMPUTADOR ? "🤖 Computador" : "Você";
+    return simbolo === "X" ? "Jogador 1" : "Jogador 2";
+  }
+
+  // ---------- IA (fácil: aleatório • médio: ataca/bloqueia • difícil: minimax perfeito) ----------
+
+  function verificarVitoriaEstado(estado) {
+    for (var i = 0; i < LINHAS_VITORIA.length; i++) {
+      var linha = LINHAS_VITORIA[i];
+      var a = estado[linha[0]], b = estado[linha[1]], c = estado[linha[2]];
+      if (a !== "" && a === b && b === c) return a;
+    }
+    return null;
+  }
+
+  function jogadaGanhadora(estado, simbolo) {
+    for (var i = 0; i < 9; i++) {
+      if (estado[i] !== "") continue;
+      var copia = estado.slice();
+      copia[i] = simbolo;
+      if (verificarVitoriaEstado(copia) === simbolo) return i;
+    }
+    return null;
+  }
+
+  function celulasVazias(estado) {
+    var vazias = [];
+    for (var i = 0; i < 9; i++) if (estado[i] === "") vazias.push(i);
+    return vazias;
+  }
+
+  function minimax(estado, jogadorDaVez, simboloIA, simboloHumano) {
+    var vencedor = verificarVitoriaEstado(estado);
+    if (vencedor === simboloIA) return { pontuacao: 10 };
+    if (vencedor === simboloHumano) return { pontuacao: -10 };
+    var vazias = celulasVazias(estado);
+    if (vazias.length === 0) return { pontuacao: 0 };
+
+    var melhor = null;
+    for (var i = 0; i < vazias.length; i++) {
+      var indice = vazias[i];
+      var copia = estado.slice();
+      copia[indice] = jogadorDaVez;
+      var resultado = minimax(copia, jogadorDaVez === "X" ? "O" : "X", simboloIA, simboloHumano);
+      var jogada = { indice: indice, pontuacao: resultado.pontuacao };
+      if (melhor === null) { melhor = jogada; continue; }
+      if (jogadorDaVez === simboloIA && jogada.pontuacao > melhor.pontuacao) melhor = jogada;
+      if (jogadorDaVez === simboloHumano && jogada.pontuacao < melhor.pontuacao) melhor = jogada;
+    }
+    return melhor;
+  }
+
+  function escolherJogadaComputador() {
+    var vazias = celulasVazias(celulas);
+    var simboloHumano = SIMBOLO_COMPUTADOR === "X" ? "O" : "X";
+
+    if (dificuldadeComputador === "facil") {
+      return vazias[Math.floor(Math.random() * vazias.length)];
+    }
+
+    if (dificuldadeComputador === "medio") {
+      var ganha = jogadaGanhadora(celulas, SIMBOLO_COMPUTADOR);
+      if (ganha !== null) return ganha;
+      var bloqueia = jogadaGanhadora(celulas, simboloHumano);
+      if (bloqueia !== null) return bloqueia;
+      return vazias[Math.floor(Math.random() * vazias.length)];
+    }
+
+    // difícil: minimax perfeito (nunca perde)
+    return minimax(celulas, SIMBOLO_COMPUTADOR, SIMBOLO_COMPUTADOR, simboloHumano).indice;
+  }
+
+  function agendarJogadaComputador() {
+    computadorPensando = true;
+    vezEl.textContent = "🤖 Computador pensando...";
+    setTimeout(function () {
+      computadorPensando = false;
+      if (jogoAcabou) return;
+      var indice = escolherJogadaComputador();
+      processarJogada(indice);
+    }, 500);
+  }
+
+  function criarTabuleiro() {
+    tabuleiroEl.innerHTML = "";
+    celulas = ["", "", "", "", "", "", "", "", ""];
+    jogadorAtual = "X";
+    jogoAcabou = false;
+
+    for (var i = 0; i < 9; i++) {
+      var btn = document.createElement("button");
+      btn.className = "celula";
+      btn.dataset.indice = i;
+      btn.addEventListener("click", aoClicarCelula);
+      tabuleiroEl.appendChild(btn);
+    }
+    atualizarVez();
+  }
+
+  function atualizarVez() {
+    if (!jogoAcabou) {
+      vezEl.textContent = "Vez de: " + (jogadorAtual === "X" ? "❌" : "⭕") + " " + nomeDoJogador(jogadorAtual);
+    }
+  }
+
+  function aoClicarCelula(evento) {
+    if (jogoAcabou || computadorPensando) return;
+    if (modoJogo === "rede" && jogadorAtual !== meuSimbolo) return; // não é a sua vez
+    if (modoJogo === "computador" && jogadorAtual === SIMBOLO_COMPUTADOR) return; // vez do computador
+
+    var indice = Number(evento.currentTarget.dataset.indice);
+    if (celulas[indice] !== "") return;
+
+    processarJogada(indice);
+
+    if (modoJogo === "rede" && rede) rede.enviar({ tipo: "jogada", indice: indice });
+    if (modoJogo === "computador" && !jogoAcabou && jogadorAtual === SIMBOLO_COMPUTADOR) agendarJogadaComputador();
+  }
+
+  function processarJogada(indice) {
+    celulas[indice] = jogadorAtual;
+    var botao = tabuleiroEl.children[indice];
+    botao.textContent = jogadorAtual === "X" ? "❌" : "⭕";
+    botao.classList.add(jogadorAtual === "X" ? "x" : "o");
+    botao.disabled = true;
+
+    var vitoria = verificarVitoria();
+    if (vitoria) {
+      jogoAcabou = true;
+      vitoria.forEach(function (i) { tabuleiroEl.children[i].classList.add("vencedora"); });
+      placar[jogadorAtual]++;
+      atualizarPlacar();
+      vezEl.textContent = (jogadorAtual === "X" ? "❌" : "⭕") + " " + nomeDoJogador(jogadorAtual) + " venceu! 🎉";
+      desabilitarTudo();
+      return;
+    }
+
+    if (celulas.every(function (c) { return c !== ""; })) {
+      jogoAcabou = true;
+      vezEl.textContent = "Empate! 🤝";
+      return;
+    }
+
+    jogadorAtual = jogadorAtual === "X" ? "O" : "X";
+    atualizarVez();
+  }
+
+  function verificarVitoria() {
+    for (var i = 0; i < LINHAS_VITORIA.length; i++) {
+      var linha = LINHAS_VITORIA[i];
+      var a = celulas[linha[0]], b = celulas[linha[1]], c = celulas[linha[2]];
+      if (a !== "" && a === b && b === c) return linha;
+    }
+    return null;
+  }
+
+  function desabilitarTudo() {
+    for (var i = 0; i < tabuleiroEl.children.length; i++) {
+      tabuleiroEl.children[i].disabled = true;
+    }
+  }
+
+  function atualizarPlacar() {
+    pontosXEl.textContent = placar.X;
+    pontosOEl.textContent = placar.O;
+  }
+
+  btnReiniciar.addEventListener("click", function () {
+    criarTabuleiro();
+    if (modoJogo === "rede" && rede) rede.enviar({ tipo: "reiniciar" });
+  });
+
+  // ---------- Seleção de modo / conexão em rede ----------
+
+  function mostrarJogo() {
+    document.getElementById("telaModo").classList.add("escondido");
+    document.getElementById("telaSala").classList.add("escondido");
+    document.getElementById("telaConfigDificuldade").classList.add("escondido");
+    document.getElementById("areaJogo").classList.remove("escondido");
+  }
+
+  document.getElementById("btnModoLocal").addEventListener("click", function () {
+    modoJogo = "local";
+    mostrarJogo();
+    criarTabuleiro();
+  });
+
+  document.getElementById("btnContraComputador").addEventListener("click", function () {
+    document.getElementById("telaModo").classList.add("escondido");
+    document.getElementById("telaConfigDificuldade").classList.remove("escondido");
+  });
+
+  document.getElementById("btnVoltarModoDificuldade").addEventListener("click", function () {
+    document.getElementById("telaConfigDificuldade").classList.add("escondido");
+    document.getElementById("telaModo").classList.remove("escondido");
+  });
+
+  document.querySelectorAll("#telaConfigDificuldade [data-dificuldade]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      dificuldadeComputador = btn.dataset.dificuldade;
+      modoJogo = "computador";
+      mostrarJogo();
+      criarTabuleiro();
+    });
+  });
+
+  document.getElementById("btnModoRede").addEventListener("click", function () {
+    document.getElementById("telaModo").classList.add("escondido");
+    document.getElementById("telaSala").classList.remove("escondido");
+  });
+
+  document.getElementById("btnVoltarModo").addEventListener("click", function () {
+    document.getElementById("telaSala").classList.add("escondido");
+    document.getElementById("telaModo").classList.remove("escondido");
+  });
+
+  document.getElementById("btnTrocarModo").addEventListener("click", function () {
+    if (rede) { rede.fechar(); rede = null; }
+    document.getElementById("areaJogo").classList.add("escondido");
+    document.getElementById("telaModo").classList.remove("escondido");
+  });
+
+  document.getElementById("btnEntrarSala").addEventListener("click", function () {
+    var codigo = document.getElementById("inputSala").value.trim();
+    var statusEl = document.getElementById("statusRede");
+    if (!codigo) { statusEl.textContent = "Digite um código de sala primeiro."; return; }
+    this.disabled = true; // evita clique duplo/triplo criando conexões repetidas na mesma sala
+
+    modoJogo = "rede";
+    statusEl.textContent = "Conectando...";
+
+    rede = criarConexaoRede({
+      sala: "jogo-da-velha-" + codigo,
+      aoConectar: function (info) {
+        if (info.quantidadeNaSala === 1) {
+          meuSimbolo = "X";
+          statusEl.textContent = "Sala criada! Aguardando o outro jogador entrar... (você será ❌)";
+        } else {
+          meuSimbolo = "O";
+          statusEl.textContent = "Conectado! Você é ⭕";
+          mostrarJogo();
+          criarTabuleiro();
+        }
+      },
+      aoEntrarOutroJogador: function () {
+        statusEl.textContent = "O outro jogador entrou! Começando a partida...";
+        mostrarJogo();
+        criarTabuleiro();
+      },
+      aoReceberMensagem: function (msg) {
+        if (msg.tipo === "jogada" && !jogoAcabou) processarJogada(msg.indice);
+        if (msg.tipo === "reiniciar") criarTabuleiro();
+      },
+      aoSairJogador: function () {
+        if (!jogoAcabou) {
+          jogoAcabou = true;
+          vezEl.textContent = "😕 O outro jogador saiu da sala.";
+        }
+      },
+      aoDesconectar: function () {
+        statusEl.textContent = "Conexão com o servidor perdida.";
+        document.getElementById("avisoRedeCaida").classList.remove("escondido");
+      }
+    });
+  });
+
+  document.getElementById("btnRecarregarRede").addEventListener("click", function () {
+    location.reload();
+  });
+</script>
+</body>
+</html>

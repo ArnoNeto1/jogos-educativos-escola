@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cobrinha Educativa</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 12px; font-size: 1rem; }
+  .painel {
+    display: flex; gap: 22px; font-weight: 700;
+    background: white; padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 14px;
+  }
+  .area-jogo { position: relative; }
+  canvas {
+    background: #dff3ff; border-radius: 16px; box-shadow: 0 6px 20px rgba(30,64,175,0.18);
+    touch-action: none;
+  }
+  .overlay {
+    position: absolute; inset: 0; background: rgba(30,41,59,0.75);
+    border-radius: 16px; color: white; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px;
+  }
+  .overlay.mostrar { display: flex; }
+  .overlay h2 { margin: 0; font-size: 1.6rem; }
+  .btn-nivel {
+    background: white; border: none; border-radius: 12px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 14px 22px; cursor: pointer; text-align: left; width: 100%; max-width: 260px;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.78rem; }
+  .dpad { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 6px; margin-top: 16px; }
+  .dpad button {
+    border: none; border-radius: 12px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    font-size: 1.4rem; cursor: pointer; color: var(--azul);
+  }
+  .dpad button:active { background: #dbeafe; }
+  .dpad .vazio { visibility: hidden; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🐍 Cobrinha Educativa</h1>
+<p class="instrucoes">Use as setas do teclado (ou os botões abaixo) para levar a cobrinha até o próximo número, sempre em ordem: 1, 2, 3...</p>
+
+<div class="painel">
+  <span>🎯 Próximo: <span id="proximoNumero">1</span></span>
+  <span>⭐ Pontos: <span id="pontuacao">0</span></span>
+</div>
+
+<div class="area-jogo">
+  <canvas id="canvas" width="420" height="420"></canvas>
+  <div class="overlay mostrar" id="telaNivel" style="gap:12px;">
+    <h2>Escolha o nível</h2>
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — mais devagar, conta até 5</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — conta até 9</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — mais rápido, conta até 15</small></button>
+  </div>
+  <div class="overlay" id="overlay">
+    <h2 id="overlayTitulo">Fim de jogo!</h2>
+    <p id="overlayResumo"></p>
+    <button class="acao" id="btnReiniciar">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<div class="dpad">
+  <span class="vazio"></span>
+  <button id="btnCima">⬆️</button>
+  <span class="vazio"></span>
+  <button id="btnEsquerda">⬅️</button>
+  <span class="vazio"></span>
+  <button id="btnDireita">➡️</button>
+  <span class="vazio"></span>
+  <button id="btnBaixo">⬇️</button>
+  <span class="vazio"></span>
+</div>
+
+<script>
+  var COLUNAS = 15, LINHAS = 15, TAMANHO_CELULA = 28;
+  var NIVEIS = {
+    facil: { velocidadeMs: 230, numeroMaximo: 5 },
+    medio: { velocidadeMs: 170, numeroMaximo: 9 },
+    dificil: { velocidadeMs: 120, numeroMaximo: 15 }
+  };
+  var nivelEscolhido = "medio";
+  var VELOCIDADE_MS = 170;
+  var NUMERO_MAXIMO = 9;
+
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+  var proximoNumeroEl = document.getElementById("proximoNumero");
+  var pontuacaoEl = document.getElementById("pontuacao");
+  var overlay = document.getElementById("overlay");
+  var overlayTitulo = document.getElementById("overlayTitulo");
+  var overlayResumo = document.getElementById("overlayResumo");
+  var btnReiniciar = document.getElementById("btnReiniciar");
+
+  var cobra, direcaoAtual, direcaoDesejada, comida, pontuacao, proximoNumero, jogoAcabou, temporizador;
+
+  function posicaoAleatoria() {
+    return {
+      x: Math.floor(Math.random() * COLUNAS),
+      y: Math.floor(Math.random() * LINHAS)
+    };
+  }
+
+  function ocupadaPelaCobra(pos, cobraAtual) {
+    return cobraAtual.some(function (seg) { return seg.x === pos.x && seg.y === pos.y; });
+  }
+
+  function gerarComida() {
+    var tentativas = 0;
+    var pos;
+    do {
+      pos = posicaoAleatoria();
+      tentativas++;
+    } while (ocupadaPelaCobra(pos, cobra) && tentativas < 500);
+    return pos;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    VELOCIDADE_MS = NIVEIS[nivelEscolhido].velocidadeMs;
+    NUMERO_MAXIMO = NIVEIS[nivelEscolhido].numeroMaximo;
+    document.getElementById("telaNivel").classList.remove("mostrar");
+    cobra = [{ x: 7, y: 7 }, { x: 6, y: 7 }, { x: 5, y: 7 }];
+    direcaoAtual = { x: 1, y: 0 };
+    direcaoDesejada = { x: 1, y: 0 };
+    pontuacao = 0;
+    proximoNumero = 1;
+    jogoAcabou = false;
+    comida = gerarComida();
+
+    pontuacaoEl.textContent = pontuacao;
+    proximoNumeroEl.textContent = proximoNumero;
+    overlay.classList.remove("mostrar");
+
+    if (temporizador) clearInterval(temporizador);
+    temporizador = setInterval(passo, VELOCIDADE_MS);
+    desenhar();
+  }
+
+  function direcoesOpostas(a, b) {
+    return a.x === -b.x && a.y === -b.y;
+  }
+
+  function definirDirecao(nova) {
+    if (jogoAcabou) return;
+    if (direcoesOpostas(nova, direcaoAtual)) return;
+    direcaoDesejada = nova;
+  }
+
+  function passo() {
+    direcaoAtual = direcaoDesejada;
+    var cabecaAtual = cobra[0];
+    var novaCabeca = { x: cabecaAtual.x + direcaoAtual.x, y: cabecaAtual.y + direcaoAtual.y };
+
+    if (novaCabeca.x < 0 || novaCabeca.x >= COLUNAS || novaCabeca.y < 0 || novaCabeca.y >= LINHAS) {
+      return finalizarJogo();
+    }
+    if (ocupadaPelaCobra(novaCabeca, cobra)) {
+      return finalizarJogo();
+    }
+
+    cobra.unshift(novaCabeca);
+
+    if (novaCabeca.x === comida.x && novaCabeca.y === comida.y) {
+      pontuacao++;
+      pontuacaoEl.textContent = pontuacao;
+      proximoNumero = proximoNumero === NUMERO_MAXIMO ? 1 : proximoNumero + 1;
+      proximoNumeroEl.textContent = proximoNumero;
+      comida = gerarComida();
+    } else {
+      cobra.pop();
+    }
+
+    desenhar();
+  }
+
+  function finalizarJogo() {
+    jogoAcabou = true;
+    clearInterval(temporizador);
+    overlayTitulo.textContent = pontuacao > 0 ? "🐍 Fim de jogo!" : "🐍 Ops, bateu!";
+    overlayResumo.textContent = "Pontos: " + pontuacao + " • Tamanho da cobra: " + cobra.length;
+    overlay.classList.add("mostrar");
+  }
+
+  function desenhar() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // grade suave
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.08)";
+    for (var i = 0; i <= COLUNAS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * TAMANHO_CELULA, 0);
+      ctx.lineTo(i * TAMANHO_CELULA, canvas.height);
+      ctx.stroke();
+    }
+    for (var j = 0; j <= LINHAS; j++) {
+      ctx.beginPath();
+      ctx.moveTo(0, j * TAMANHO_CELULA);
+      ctx.lineTo(canvas.width, j * TAMANHO_CELULA);
+      ctx.stroke();
+    }
+
+    // comida
+    ctx.fillStyle = "#fbbf24";
+    desenharCelulaArredondada(comida.x, comida.y, 8);
+    ctx.fillStyle = "#78350f";
+    ctx.font = "bold 16px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(
+      proximoNumero,
+      comida.x * TAMANHO_CELULA + TAMANHO_CELULA / 2,
+      comida.y * TAMANHO_CELULA + TAMANHO_CELULA / 2 + 1
+    );
+
+    // cobra
+    cobra.forEach(function (seg, indice) {
+      ctx.fillStyle = indice === 0 ? "#16a34a" : "#22c55e";
+      desenharCelulaArredondada(seg.x, seg.y, 6);
+    });
+  }
+
+  function desenharCelulaArredondada(cx, cy, raio) {
+    var x = cx * TAMANHO_CELULA + 2;
+    var y = cy * TAMANHO_CELULA + 2;
+    var largura = TAMANHO_CELULA - 4;
+    var altura = TAMANHO_CELULA - 4;
+    ctx.beginPath();
+    ctx.moveTo(x + raio, y);
+    ctx.arcTo(x + largura, y, x + largura, y + altura, raio);
+    ctx.arcTo(x + largura, y + altura, x, y + altura, raio);
+    ctx.arcTo(x, y + altura, x, y, raio);
+    ctx.arcTo(x, y, x + largura, y, raio);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  document.addEventListener("keydown", function (evento) {
+    var teclas = {
+      ArrowUp: { x: 0, y: -1 }, w: { x: 0, y: -1 }, W: { x: 0, y: -1 },
+      ArrowDown: { x: 0, y: 1 }, s: { x: 0, y: 1 }, S: { x: 0, y: 1 },
+      ArrowLeft: { x: -1, y: 0 }, a: { x: -1, y: 0 }, A: { x: -1, y: 0 },
+      ArrowRight: { x: 1, y: 0 }, d: { x: 1, y: 0 }, D: { x: 1, y: 0 }
+    };
+    var nova = teclas[evento.key];
+    if (nova) {
+      evento.preventDefault();
+      definirDirecao(nova);
+    }
+  });
+
+  document.getElementById("btnCima").addEventListener("click", function () { definirDirecao({ x: 0, y: -1 }); });
+  document.getElementById("btnBaixo").addEventListener("click", function () { definirDirecao({ x: 0, y: 1 }); });
+  document.getElementById("btnEsquerda").addEventListener("click", function () { definirDirecao({ x: -1, y: 0 }); });
+  document.getElementById("btnDireita").addEventListener("click", function () { definirDirecao({ x: 1, y: 0 }); });
+
+  btnReiniciar.addEventListener("click", function () {
+    overlay.classList.remove("mostrar");
+    document.getElementById("telaNivel").classList.add("mostrar");
+    if (temporizador) clearInterval(temporizador);
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

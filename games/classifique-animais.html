@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classifique os Animais</title>
+<style>
+  :root { --azul:#2563eb; --verde:#16a34a; --amarelo:#eab308; --vermelho:#ef4444; --roxo:#7c3aed; --laranja:#ea580c; --fundo:#f0fdf4; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--verde);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 520px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(22,163,74,0.14);
+    width: 100%; max-width: 480px; text-align: center;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; width: 100%; margin-bottom: 12px; display: block;
+  }
+  .btn-nivel:hover { background: #dcfce7; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+  .bicho-icone { font-size: 4.5rem; margin-bottom: 8px; }
+  .bicho-nome { font-size: 1.3rem; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
+  .pergunta-texto { color: #475569; margin-bottom: 18px; }
+  .feedback { min-height: 1.6em; font-weight: 700; margin-bottom: 14px; }
+  .feedback.certo { color: var(--verde); }
+  .feedback.errado { color: var(--vermelho); }
+
+  .categorias { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cat-btn {
+    border: none; border-radius: 14px; font-size: 1rem; font-weight: 800; color: white;
+    padding: 16px 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .cat-btn:disabled { cursor: default; opacity: 0.6; }
+  .cat-btn.certa { outline: 4px solid var(--verde); }
+  .cat-btn.errada { outline: 4px solid var(--vermelho); }
+  .cat-mamifero { background: #a16207; }
+  .cat-ave { background: #0284c7; }
+  .cat-peixe { background: #0891b2; }
+  .cat-reptil { background: #15803d; }
+  .cat-inseto { background: #ca8a04; }
+
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--verde); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🔬 Classifique os Animais</h1>
+<p class="instrucoes">Veja o bicho e clique no grupo certo: mamífero, ave, peixe, réptil ou inseto?</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — 3 grupos: mamífero, ave, peixe</small></button>
+  <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — + répteis</small></button>
+  <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — + insetos e pegadinhas (baleia, morcego, pinguim...)</small></button>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+  <div id="telaJogo">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="bicho-icone" id="bichoIcone"></div>
+    <div class="bicho-nome" id="bichoNome"></div>
+    <div class="pergunta-texto">Que tipo de animal é esse?</div>
+    <div class="feedback" id="feedback"></div>
+    <div class="categorias" id="categorias"></div>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+  // Banco de animais — "categoria" é o grupo certo, "nivel" controla quando o animal passa
+  // a aparecer (cumulativo: difícil usa fácil+médio+difícil). As categorias em si só entram
+  // em jogo a partir do nível em que fazem sentido (réptil no médio, inseto no difícil).
+  var BANCO_ANIMAIS = [
+    { nome: "Cachorro", icone: "🐶", categoria: "mamifero", nivel: "facil" },
+    { nome: "Gato", icone: "🐱", categoria: "mamifero", nivel: "facil" },
+    { nome: "Vaca", icone: "🐮", categoria: "mamifero", nivel: "facil" },
+    { nome: "Cavalo", icone: "🐴", categoria: "mamifero", nivel: "medio" },
+    { nome: "Leão", icone: "🦁", categoria: "mamifero", nivel: "medio" },
+    { nome: "Elefante", icone: "🐘", categoria: "mamifero", nivel: "medio" },
+    { nome: "Baleia", icone: "🐳", categoria: "mamifero", nivel: "dificil" },
+    { nome: "Morcego", icone: "🦇", categoria: "mamifero", nivel: "dificil" },
+    { nome: "Galinha", icone: "🐔", categoria: "ave", nivel: "facil" },
+    { nome: "Papagaio", icone: "🦜", categoria: "ave", nivel: "facil" },
+    { nome: "Pato", icone: "🦆", categoria: "ave", nivel: "medio" },
+    { nome: "Coruja", icone: "🦉", categoria: "ave", nivel: "medio" },
+    { nome: "Pinguim", icone: "🐧", categoria: "ave", nivel: "dificil" },
+    { nome: "Peixinho", icone: "🐠", categoria: "peixe", nivel: "facil" },
+    { nome: "Tubarão", icone: "🦈", categoria: "peixe", nivel: "facil" },
+    { nome: "Baiacu", icone: "🐡", categoria: "peixe", nivel: "medio" },
+    { nome: "Cobra", icone: "🐍", categoria: "reptil", nivel: "medio" },
+    { nome: "Jacaré", icone: "🐊", categoria: "reptil", nivel: "medio" },
+    { nome: "Tartaruga", icone: "🐢", categoria: "reptil", nivel: "medio" },
+    { nome: "Lagartixa", icone: "🦎", categoria: "reptil", nivel: "dificil" },
+    { nome: "Borboleta", icone: "🦋", categoria: "inseto", nivel: "dificil" },
+    { nome: "Abelha", icone: "🐝", categoria: "inseto", nivel: "dificil" },
+    { nome: "Joaninha", icone: "🐞", categoria: "inseto", nivel: "dificil" },
+    { nome: "Formiga", icone: "🐜", categoria: "inseto", nivel: "dificil" }
+  ];
+
+  var CATEGORIAS_INFO = {
+    mamifero: { nome: "Mamífero", classe: "cat-mamifero" },
+    ave: { nome: "Ave", classe: "cat-ave" },
+    peixe: { nome: "Peixe", classe: "cat-peixe" },
+    reptil: { nome: "Réptil", classe: "cat-reptil" },
+    inseto: { nome: "Inseto", classe: "cat-inseto" }
+  };
+
+  var NIVEIS = {
+    facil: { rodadas: 6, niveisIncluidos: ["facil"], categoriasAtivas: ["mamifero", "ave", "peixe"] },
+    medio: { rodadas: 8, niveisIncluidos: ["facil", "medio"], categoriasAtivas: ["mamifero", "ave", "peixe", "reptil"] },
+    dificil: { rodadas: 10, niveisIncluidos: ["facil", "medio", "dificil"], categoriasAtivas: ["mamifero", "ave", "peixe", "reptil", "inseto"] }
+  };
+  var nivelEscolhido = "medio";
+
+  var telaJogo = document.getElementById("telaJogo");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var bichoIconeEl = document.getElementById("bichoIcone");
+  var bichoNomeEl = document.getElementById("bichoNome");
+  var feedbackEl = document.getElementById("feedback");
+  var categoriasEl = document.getElementById("categorias");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var rodadas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+  var podeClicar = false;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var config = NIVEIS[nivelEscolhido];
+    var pool = BANCO_ANIMAIS.filter(function (a) {
+      return config.niveisIncluidos.indexOf(a.nivel) !== -1 && config.categoriasAtivas.indexOf(a.categoria) !== -1;
+    });
+    rodadas = embaralhar(pool).slice(0, config.rodadas);
+    indiceAtual = 0;
+    acertos = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaJogo.classList.remove("escondido");
+    construirBotoesCategoria();
+    mostrarAnimal();
+  }
+
+  function construirBotoesCategoria() {
+    var config = NIVEIS[nivelEscolhido];
+    categoriasEl.innerHTML = "";
+    config.categoriasAtivas.forEach(function (chave) {
+      var info = CATEGORIAS_INFO[chave];
+      var btn = document.createElement("button");
+      btn.className = "cat-btn " + info.classe;
+      btn.dataset.categoria = chave;
+      btn.textContent = info.nome;
+      btn.addEventListener("click", function () { responder(chave, btn); });
+      categoriasEl.appendChild(btn);
+    });
+  }
+
+  function mostrarAnimal() {
+    var a = rodadas[indiceAtual];
+    progressoEl.textContent = "Animal " + (indiceAtual + 1) + " de " + rodadas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    bichoIconeEl.textContent = a.icone;
+    bichoNomeEl.textContent = a.nome;
+    feedbackEl.textContent = "";
+    feedbackEl.className = "feedback";
+    categoriasEl.querySelectorAll(".cat-btn").forEach(function (b) {
+      b.disabled = false;
+      b.classList.remove("certa", "errada");
+    });
+    podeClicar = true;
+  }
+
+  function responder(categoriaEscolhida, botaoClicado) {
+    if (!podeClicar) return;
+    podeClicar = false;
+
+    var a = rodadas[indiceAtual];
+    categoriasEl.querySelectorAll(".cat-btn").forEach(function (b) { b.disabled = true; });
+
+    if (categoriaEscolhida === a.categoria) {
+      acertos++;
+      botaoClicado.classList.add("certa");
+      feedbackEl.textContent = "✅ Isso mesmo! " + a.nome + " é um(a) " + CATEGORIAS_INFO[a.categoria].nome.toLowerCase() + ".";
+      feedbackEl.className = "feedback certo";
+    } else {
+      botaoClicado.classList.add("errada");
+      var botaoCerto = categoriasEl.querySelector('[data-categoria="' + a.categoria + '"]');
+      if (botaoCerto) botaoCerto.classList.add("certa");
+      feedbackEl.textContent = "❌ Essa não! " + a.nome + " é um(a) " + CATEGORIAS_INFO[a.categoria].nome.toLowerCase() + ".";
+      feedbackEl.className = "feedback errado";
+    }
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+
+    setTimeout(function () {
+      indiceAtual++;
+      if (indiceAtual < rodadas.length) {
+        mostrarAnimal();
+      } else {
+        mostrarResultado();
+      }
+    }, 1500);
+  }
+
+  function mostrarResultado() {
+    telaJogo.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / rodadas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + rodadas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🔬 Você manja de biologia!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem, quase um(a) cientista!";
+    else resultadoTitulo.textContent = "💪 Vamos estudar mais esses animais!";
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

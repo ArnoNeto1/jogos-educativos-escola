@@ -1,0 +1,12 @@
+{
+  "name": "jogos-educativos-escola-servidor",
+  "version": "1.0.0",
+  "description": "Servidor local (site estático + multiplayer em rede) para o portal de jogos educativos da escola.",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

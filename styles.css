@@ -1,0 +1,149 @@
+:root {
+  --azul: #2563eb;
+  --azul-escuro: #1d4ed8;
+  --amarelo: #fbbf24;
+  --verde: #22c55e;
+  --roxo: #8b5cf6;
+  --fundo: #f0f7ff;
+  --texto: #1e293b;
+  --branco: #ffffff;
+  --sombra: 0 6px 16px rgba(30, 64, 175, 0.12);
+  --raio: 20px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Trebuchet MS", Verdana, Arial, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+header.topo {
+  background: linear-gradient(135deg, var(--azul), var(--roxo));
+  color: var(--branco);
+  padding: 40px 20px 60px;
+  text-align: center;
+}
+
+header.topo h1 {
+  font-size: 2.4rem;
+  margin: 0 0 8px;
+}
+
+header.topo p {
+  font-size: 1.15rem;
+  margin: 0;
+  opacity: 0.95;
+}
+
+main {
+  max-width: 1100px;
+  margin: -30px auto 60px;
+  padding: 0 20px;
+}
+
+.filtros {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  background: var(--branco);
+  padding: 16px;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  margin-bottom: 30px;
+}
+
+.filtro-btn {
+  border: none;
+  background: var(--fundo);
+  color: var(--azul-escuro);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 10px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.filtro-btn:hover { transform: translateY(-2px); }
+
+.filtro-btn.ativo {
+  background: var(--azul);
+  color: var(--branco);
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 22px;
+}
+
+.card {
+  background: var(--branco);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 22px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--texto);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: 3px solid transparent;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--amarelo);
+}
+
+.card .icone {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.card .materia {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--roxo);
+  text-transform: uppercase;
+}
+
+.card h3 {
+  margin: 2px 0 0;
+  font-size: 1.2rem;
+}
+
+.card .nivel {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.card .jogar {
+  margin-top: 10px;
+  background: var(--verde);
+  color: var(--branco);
+  font-weight: 700;
+  padding: 8px 22px;
+  border-radius: 999px;
+}
+
+.vazio {
+  text-align: center;
+  color: #64748b;
+  padding: 40px;
+  font-size: 1.1rem;
+}
+
+footer {
+  text-align: center;
+  padding: 24px;
+  color: #64748b;
+  font-size: 0.9rem;
+}

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Que Horas São?</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 20px; font-size: 1rem; }
+  .escondido { display: none !important; }
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 440px; text-align: center;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; width: 100%; margin-bottom: 12px; display: block;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+  .pergunta-texto { font-weight: 700; margin-bottom: 14px; }
+  svg#relogio { display: block; margin: 0 auto 18px; }
+  .alternativas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alt-btn {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.3rem; font-weight: 800; color: #1e293b;
+    padding: 14px 0; cursor: pointer;
+  }
+  .alt-btn:hover:not(:disabled) { background: #dbeafe; }
+  .alt-btn:disabled { cursor: default; }
+  .alt-btn.certa { background: var(--verde); color: white; }
+  .alt-btn.errada { background: var(--vermelho); color: white; }
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--azul); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🕐 Que Horas São?</h1>
+<p class="instrucoes">Veja o relógio e escolha o horário certo!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — horas certas e meia-hora</small></button>
+  <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — + quinze e quarenta e cinco</small></button>
+  <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — qualquer minuto (de 5 em 5)</small></button>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+  <div id="telaQuiz">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="pergunta-texto">Que horas o relógio está marcando?</div>
+    <svg id="relogio" width="200" height="200" viewBox="0 0 200 200"></svg>
+    <div class="alternativas" id="alternativas"></div>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+  var TOTAL_PERGUNTAS = 10;
+  var NIVEIS = {
+    facil: { minutosPossiveis: [0, 30] },
+    medio: { minutosPossiveis: [0, 15, 30, 45] },
+    dificil: { minutosPossiveis: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55] }
+  };
+  var nivelEscolhido = "medio";
+
+  var telaQuiz = document.getElementById("telaQuiz");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var relogioEl = document.getElementById("relogio");
+  var alternativasEl = document.getElementById("alternativas");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var perguntas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function doisDigitos(n) { return n < 10 ? "0" + n : String(n); }
+  function textoHorario(h, m) { return doisDigitos(h) + ":" + doisDigitos(m); }
+
+  function gerarPergunta(config) {
+    var hora = 1 + Math.floor(Math.random() * 12); // 1 a 12
+    var minuto = config.minutosPossiveis[Math.floor(Math.random() * config.minutosPossiveis.length)];
+    return { hora: hora, minuto: minuto };
+  }
+
+  function gerarPerguntas() {
+    var config = NIVEIS[nivelEscolhido];
+    var lista = [];
+    for (var i = 0; i < TOTAL_PERGUNTAS; i++) lista.push(gerarPergunta(config));
+    return lista;
+  }
+
+  function desenharRelogio(hora, minuto) {
+    var ns = "http://www.w3.org/2000/svg";
+    relogioEl.innerHTML = "";
+    var cx = 100, cy = 100, raio = 92;
+
+    var mostrador = document.createElementNS(ns, "circle");
+    mostrador.setAttribute("cx", cx); mostrador.setAttribute("cy", cy); mostrador.setAttribute("r", raio);
+    mostrador.setAttribute("fill", "white"); mostrador.setAttribute("stroke", "#1e293b"); mostrador.setAttribute("stroke-width", "4");
+    relogioEl.appendChild(mostrador);
+
+    for (var n = 1; n <= 12; n++) {
+      var angulo = (n / 12) * Math.PI * 2 - Math.PI / 2;
+      var x = cx + Math.cos(angulo) * (raio - 20);
+      var y = cy + Math.sin(angulo) * (raio - 20);
+      var texto = document.createElementNS(ns, "text");
+      texto.setAttribute("x", x); texto.setAttribute("y", y + 6);
+      texto.setAttribute("text-anchor", "middle");
+      texto.setAttribute("font-size", "16"); texto.setAttribute("font-weight", "700"); texto.setAttribute("fill", "#1e293b");
+      texto.textContent = n;
+      relogioEl.appendChild(texto);
+    }
+
+    var anguloHora = ((hora % 12) / 12 + (minuto / 60) / 12) * Math.PI * 2 - Math.PI / 2;
+    var anguloMinuto = (minuto / 60) * Math.PI * 2 - Math.PI / 2;
+
+    var ponteiroHora = document.createElementNS(ns, "line");
+    ponteiroHora.setAttribute("x1", cx); ponteiroHora.setAttribute("y1", cy);
+    ponteiroHora.setAttribute("x2", cx + Math.cos(anguloHora) * (raio * 0.5));
+    ponteiroHora.setAttribute("y2", cy + Math.sin(anguloHora) * (raio * 0.5));
+    ponteiroHora.setAttribute("stroke", "#1e293b"); ponteiroHora.setAttribute("stroke-width", "6"); ponteiroHora.setAttribute("stroke-linecap", "round");
+    relogioEl.appendChild(ponteiroHora);
+
+    var ponteiroMinuto = document.createElementNS(ns, "line");
+    ponteiroMinuto.setAttribute("x1", cx); ponteiroMinuto.setAttribute("y1", cy);
+    ponteiroMinuto.setAttribute("x2", cx + Math.cos(anguloMinuto) * (raio * 0.78));
+    ponteiroMinuto.setAttribute("y2", cy + Math.sin(anguloMinuto) * (raio * 0.78));
+    ponteiroMinuto.setAttribute("stroke", "#2563eb"); ponteiroMinuto.setAttribute("stroke-width", "4"); ponteiroMinuto.setAttribute("stroke-linecap", "round");
+    relogioEl.appendChild(ponteiroMinuto);
+
+    var centro = document.createElementNS(ns, "circle");
+    centro.setAttribute("cx", cx); centro.setAttribute("cy", cy); centro.setAttribute("r", "6"); centro.setAttribute("fill", "#1e293b");
+    relogioEl.appendChild(centro);
+  }
+
+  function gerarAlternativas(hora, minuto, config) {
+    var opcoesTexto = [textoHorario(hora, minuto)];
+    var candidatos = [];
+    // outras combinações plausíveis: hora vizinha, minuto vizinho da lista de minutos possíveis
+    config.minutosPossiveis.forEach(function (m) {
+      if (m !== minuto) candidatos.push(textoHorario(hora, m));
+    });
+    [hora - 1, hora + 1].forEach(function (h) {
+      var hAjustada = ((h - 1) % 12 + 12) % 12 + 1;
+      candidatos.push(textoHorario(hAjustada, minuto));
+    });
+    candidatos = embaralhar(candidatos);
+    for (var i = 0; i < candidatos.length && opcoesTexto.length < 4; i++) {
+      if (opcoesTexto.indexOf(candidatos[i]) === -1) opcoesTexto.push(candidatos[i]);
+    }
+    return embaralhar(opcoesTexto);
+  }
+
+  function iniciarQuiz(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    perguntas = gerarPerguntas();
+    indiceAtual = 0;
+    acertos = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaQuiz.classList.remove("escondido");
+    mostrarPergunta();
+  }
+
+  function mostrarPergunta() {
+    var p = perguntas[indiceAtual];
+    progressoEl.textContent = "Pergunta " + (indiceAtual + 1) + " de " + perguntas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    desenharRelogio(p.hora, p.minuto);
+
+    var respostaCorreta = textoHorario(p.hora, p.minuto);
+    var opcoes = gerarAlternativas(p.hora, p.minuto, NIVEIS[nivelEscolhido]);
+    alternativasEl.innerHTML = "";
+    opcoes.forEach(function (opcao) {
+      var btn = document.createElement("button");
+      btn.className = "alt-btn";
+      btn.textContent = opcao;
+      btn.addEventListener("click", function () { responder(opcao, respostaCorreta, btn); });
+      alternativasEl.appendChild(btn);
+    });
+  }
+
+  function responder(escolhida, correta, botaoClicado) {
+    var botoes = alternativasEl.querySelectorAll(".alt-btn");
+    botoes.forEach(function (b) { b.disabled = true; });
+
+    if (escolhida === correta) {
+      acertos++;
+      botaoClicado.classList.add("certa");
+    } else {
+      botaoClicado.classList.add("errada");
+      botoes.forEach(function (b) {
+        if (b.textContent === correta) b.classList.add("certa");
+      });
+    }
+
+    setTimeout(function () {
+      indiceAtual++;
+      if (indiceAtual < perguntas.length) {
+        mostrarPergunta();
+      } else {
+        mostrarResultado();
+      }
+    }, 1100);
+  }
+
+  function mostrarResultado() {
+    telaQuiz.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / perguntas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + perguntas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🕐 Você lê relógio muito bem!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem!";
+    else resultadoTitulo.textContent = "💪 Continue praticando!";
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarQuiz(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

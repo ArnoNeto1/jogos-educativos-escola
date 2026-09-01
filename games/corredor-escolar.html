@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corredor da Escola</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 12px; font-size: 0.95rem; }
+  .escondido { display: none !important; }
+  .painel {
+    display: flex; gap: 18px; font-weight: 700; flex-wrap: wrap; justify-content: center;
+    background: white; padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 14px;
+  }
+  .painel .recorde { color: #d97706; }
+  .painel .combo { color: var(--roxo); }
+  .area-jogo { position: relative; }
+  canvas {
+    background: #cfe8ff; border-radius: 16px; box-shadow: 0 6px 20px rgba(30,64,175,0.18);
+    touch-action: none; display: block;
+  }
+  .overlay {
+    position: absolute; inset: 0; background: rgba(30,41,59,0.82);
+    border-radius: 16px; color: white; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 20px;
+  }
+  .overlay.mostrar { display: flex; }
+  .overlay h2 { margin: 0; font-size: 1.6rem; }
+  .overlay .recorde-novo { color: var(--amarelo); font-weight: 800; }
+  .controles { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+  .controles button {
+    border: none; border-radius: 12px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    font-size: 1.3rem; cursor: pointer; color: var(--azul); padding: 14px 18px;
+  }
+  .controles button:active { background: #dbeafe; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+  .dica-swipe { font-size: 0.8rem; color: #64748b; margin-top: 8px; text-align: center; }
+  .btn-nivel {
+    background: white; border: none; border-radius: 12px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 14px 22px; cursor: pointer; text-align: left; width: 100%; max-width: 260px;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.78rem; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🏃 Corredor da Escola</h1>
+<p class="instrucoes">Corra pelo corredor sem esbarrar em nada! Troque de fileira, pule obstáculos baixos e abaixe nos altos. Colete estrelas, ímãs 🧲 e escudos 🛡️ pelo caminho.</p>
+
+<div class="painel">
+  <span>⭐ Pontos: <span id="pontuacao">0</span></span>
+  <span class="combo" id="comboTexto"></span>
+  <span class="recorde">🏆 Recorde: <span id="recorde">0</span></span>
+</div>
+
+<div class="area-jogo">
+  <canvas id="canvas" width="400" height="560"></canvas>
+  <div class="overlay mostrar" id="telaNivel" style="gap:12px;">
+    <h2>Escolha o nível</h2>
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — mais devagar, obstáculos mais espaçados</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — ritmo padrão</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — mais rápido, mais obstáculos duplos</small></button>
+  </div>
+  <div class="overlay" id="overlay">
+    <h2 id="overlayTitulo">Ops, esbarrou!</h2>
+    <p id="overlayResumo"></p>
+    <p class="recorde-novo escondido" id="overlayRecordeNovo">🎉 Novo recorde!</p>
+    <button class="acao" id="btnReiniciar">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<div class="controles">
+  <button id="btnEsquerda">⬅️</button>
+  <button id="btnPular">⬆️ Pular</button>
+  <button id="btnAbaixar">⬇️ Abaixar</button>
+  <button id="btnDireita">➡️</button>
+</div>
+<p class="dica-swipe">💡 No celular/tablet: arraste o dedo na tela para os lados, pra cima (pular) ou pra baixo (abaixar).</p>
+
+<script>
+  var CANVAS_W = 400, CANVAS_H = 560;
+  var HORIZON_Y = 150, NEAR_Y = 480;
+  var NEAR_DIST = 4;
+  var Z_SPAWN = 22, Z_HIT = 1.3, Z_REMOVER = -3;
+  var LANE_LARGURA_PERTO = 108;
+  var NIVEIS = {
+    facil: { velocidadeBase: 5, velocidadeMax: 11, aceleracao: 0.06, chance2Obstaculos: 0.15 },
+    medio: { velocidadeBase: 6.5, velocidadeMax: 15, aceleracao: 0.09, chance2Obstaculos: 0.3 },
+    dificil: { velocidadeBase: 8, velocidadeMax: 19, aceleracao: 0.13, chance2Obstaculos: 0.5 }
+  };
+  var nivelEscolhido = "medio";
+  var VELOCIDADE_BASE = 6.5, VELOCIDADE_MAX = 15, ACELERACAO = 0.09;
+  var DURACAO_PULO = 0.45, ALTURA_PULO = 95;
+  var DURACAO_ABAIXAR = 0.5;
+  var DURACAO_IMA = 6, DURACAO_INVULNERAVEL = 0.8;
+  var CHAVE_RECORDE = "corredorEscolar_recorde";
+
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+  var pontuacaoEl = document.getElementById("pontuacao");
+  var comboTextoEl = document.getElementById("comboTexto");
+  var recordeEl = document.getElementById("recorde");
+  var overlay = document.getElementById("overlay");
+  var overlayTitulo = document.getElementById("overlayTitulo");
+  var overlayResumo = document.getElementById("overlayResumo");
+  var overlayRecordeNovo = document.getElementById("overlayRecordeNovo");
+  var btnReiniciar = document.getElementById("btnReiniciar");
+
+  var laneAtual, laneVisual, pulando, tempoPulo, abaixando, tempoAbaixar, inclinacao;
+  var itens, particulas, faixasVelocidade;
+  var tempoAteProximaOnda, tempoDecorrido, velocidade, distancia, estrelasColetadas, comboSeguidas;
+  var imaAtivoAte, temEscudo, invulneravelAte;
+  var jogoAcabou, ultimoTimestamp, idAnimacao, ultimaPontuacaoExibida;
+  var recorde = 0;
+  var tempoTremor = 0, flashVermelho = 0;
+  var faseCorrida = 0;
+
+  function lerRecorde() {
+    try { return Number(localStorage.getItem(CHAVE_RECORDE)) || 0; } catch (e) { return 0; }
+  }
+  function salvarRecorde(valor) {
+    try { localStorage.setItem(CHAVE_RECORDE, String(valor)); } catch (e) { /* ambiente sem localStorage: tudo bem, só não salva */ }
+  }
+
+  function escala(z) { return NEAR_DIST / (NEAR_DIST + Math.max(z, 0)); }
+  function telaY(z) { return HORIZON_Y + (NEAR_Y - HORIZON_Y) * escala(z); }
+  function telaX(lane, z) { return CANVAS_W / 2 + lane * LANE_LARGURA_PERTO * escala(z); }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var config = NIVEIS[nivelEscolhido];
+    VELOCIDADE_BASE = config.velocidadeBase;
+    VELOCIDADE_MAX = config.velocidadeMax;
+    ACELERACAO = config.aceleracao;
+    document.getElementById("telaNivel").classList.remove("mostrar");
+
+    laneAtual = 0; laneVisual = 0; inclinacao = 0;
+    pulando = false; tempoPulo = 0;
+    abaixando = false; tempoAbaixar = 0;
+    itens = []; particulas = [];
+    faixasVelocidade = [];
+    for (var i = 0; i < 8; i++) faixasVelocidade.push({ lane: (Math.floor(Math.random() * 3) - 1), z: Math.random() * Z_SPAWN });
+    tempoAteProximaOnda = 1.2;
+    tempoDecorrido = 0;
+    velocidade = VELOCIDADE_BASE;
+    distancia = 0;
+    estrelasColetadas = 0;
+    comboSeguidas = 0;
+    imaAtivoAte = 0;
+    temEscudo = false;
+    invulneravelAte = 0;
+    jogoAcabou = false;
+    ultimaPontuacaoExibida = -1;
+    tempoTremor = 0; flashVermelho = 0;
+    faseCorrida = 0;
+
+    recorde = lerRecorde();
+    recordeEl.textContent = recorde;
+    overlay.classList.remove("mostrar");
+    overlayRecordeNovo.classList.add("escondido");
+    pontuacaoEl.textContent = "0";
+    comboTextoEl.textContent = "";
+
+    if (idAnimacao) cancelAnimationFrame(idAnimacao);
+    ultimoTimestamp = null;
+    idAnimacao = requestAnimationFrame(laco);
+  }
+
+  function laco(timestamp) {
+    if (ultimoTimestamp === null) ultimoTimestamp = timestamp;
+    var dt = Math.min((timestamp - ultimoTimestamp) / 1000, 0.05);
+    ultimoTimestamp = timestamp;
+
+    atualizar(dt);
+    desenhar();
+
+    if (!jogoAcabou) {
+      idAnimacao = requestAnimationFrame(laco);
+    }
+  }
+
+  function atualizar(dt) {
+    tempoDecorrido += dt;
+    velocidade = Math.min(VELOCIDADE_BASE + tempoDecorrido * ACELERACAO, VELOCIDADE_MAX);
+    distancia += velocidade * dt;
+    faseCorrida += dt * (6 + velocidade * 0.6);
+
+    var alvoInclinacao = (laneAtual - laneVisual) * 0.5;
+    inclinacao += (alvoInclinacao - inclinacao) * Math.min(1, dt * 10);
+    laneVisual += (laneAtual - laneVisual) * Math.min(1, dt * 12);
+
+    if (pulando) {
+      tempoPulo += dt;
+      if (tempoPulo >= DURACAO_PULO) { pulando = false; tempoPulo = 0; }
+    }
+    if (abaixando) {
+      tempoAbaixar += dt;
+      if (tempoAbaixar >= DURACAO_ABAIXAR) { abaixando = false; tempoAbaixar = 0; }
+    }
+
+    for (var i = itens.length - 1; i >= 0; i--) {
+      var item = itens[i];
+      item.z -= velocidade * dt;
+
+      if (!item.resolvido && item.z <= Z_HIT) {
+        item.resolvido = true;
+        resolverItem(item);
+      }
+      if (item.z <= Z_REMOVER) itens.splice(i, 1);
+    }
+
+    faixasVelocidade.forEach(function (f) {
+      f.z -= velocidade * dt * 1.6;
+      if (f.z <= 0) { f.z = Z_SPAWN; f.lane = Math.floor(Math.random() * 3) - 1; }
+    });
+
+    for (var p = particulas.length - 1; p >= 0; p--) {
+      var part = particulas[p];
+      part.vida -= dt;
+      part.x += part.vx * dt;
+      part.y += part.vy * dt;
+      part.vy += 260 * dt;
+      if (part.vida <= 0) particulas.splice(p, 1);
+    }
+
+    if (tempoTremor > 0) tempoTremor -= dt;
+    if (flashVermelho > 0) flashVermelho -= dt;
+
+    tempoAteProximaOnda -= dt;
+    if (tempoAteProximaOnda <= 0) {
+      gerarOnda();
+      tempoAteProximaOnda = 0.85 - Math.min(velocidade / VELOCIDADE_MAX, 1) * 0.35 + Math.random() * 0.3;
+    }
+
+    var pontuacaoAtual = Math.floor(distancia) + estrelasColetadas;
+    if (pontuacaoAtual !== ultimaPontuacaoExibida) {
+      pontuacaoEl.textContent = pontuacaoAtual;
+      ultimaPontuacaoExibida = pontuacaoAtual;
+    }
+    comboTextoEl.textContent = comboSeguidas >= 3 ? "🔥 Combo x" + comboSeguidas : "";
+  }
+
+  function coletarEstrela(item) {
+    var bonus = 10 + Math.min(comboSeguidas * 2, 40);
+    estrelasColetadas += bonus;
+    comboSeguidas++;
+    criarParticulas(telaX(item.lane, 0), telaY(0), "#fbbf24");
+  }
+
+  function resolverItem(item) {
+    var mesmaFileira = item.lane === laneAtual;
+
+    if (item.tipo === "coleta") {
+      // sem o ímã, só coleta se estiver na mesma fileira; com o ímã, coleta de qualquer fileira
+      var imaAtivo = tempoDecorrido < imaAtivoAte;
+      if (mesmaFileira || imaAtivo) coletarEstrela(item);
+      return;
+    }
+    if (item.tipo === "ima" || item.tipo === "escudo") {
+      if (!mesmaFileira) return; // precisa passar por cima do power-up pra pegar
+      if (item.tipo === "ima") { imaAtivoAte = tempoDecorrido + DURACAO_IMA; criarParticulas(telaX(item.lane, 0), telaY(0), "#38bdf8"); }
+      else { temEscudo = true; criarParticulas(telaX(item.lane, 0), telaY(0), "#60a5fa"); }
+      return;
+    }
+
+    // a partir daqui, item.tipo é um obstáculo
+    if (!mesmaFileira) return;
+    if (tempoDecorrido < invulneravelAte) return; // invulnerabilidade logo após usar o escudo
+
+    var colidiu = false;
+    if (item.tipo === "pular" && !pulando) colidiu = true;
+    if (item.tipo === "abaixar" && !abaixando) colidiu = true;
+    if (item.tipo === "desviar") colidiu = true;
+
+    if (!colidiu) return; // obstáculo desviado com sucesso
+
+    if (temEscudo) {
+      temEscudo = false;
+      invulneravelAte = tempoDecorrido + DURACAO_INVULNERAVEL;
+      tempoTremor = 0.25;
+      comboSeguidas = 0;
+    } else {
+      finalizarJogo();
+    }
+  }
+
+  function gerarOnda() {
+    var lanes = [-1, 0, 1];
+    var sorte = Math.random();
+
+    if (sorte < 0.12) {
+      var laneEstrela = lanes[Math.floor(Math.random() * 3)];
+      itens.push(criarItem(laneEstrela, "coleta"));
+      return;
+    }
+
+    if (sorte < 0.19) {
+      var lanePowerUp = lanes[Math.floor(Math.random() * 3)];
+      itens.push(criarItem(lanePowerUp, Math.random() < 0.5 ? "ima" : "escudo"));
+      return;
+    }
+
+    var lanesEmbaralhadas = lanes.slice().sort(function () { return Math.random() - 0.5; });
+    var quantidadeObstaculos = Math.random() < NIVEIS[nivelEscolhido].chance2Obstaculos ? 2 : 1;
+
+    var lanesComObstaculo = lanesEmbaralhadas.slice(0, quantidadeObstaculos);
+    var lanesLivres = lanesEmbaralhadas.slice(quantidadeObstaculos);
+
+    var tiposObstaculo = ["pular", "pular", "abaixar", "abaixar", "desviar"];
+    lanesComObstaculo.forEach(function (lane) {
+      var tipo = tiposObstaculo[Math.floor(Math.random() * tiposObstaculo.length)];
+      itens.push(criarItem(lane, tipo));
+    });
+
+    if (lanesLivres.length > 0 && Math.random() < 0.5) {
+      var laneBonus = lanesLivres[Math.floor(Math.random() * lanesLivres.length)];
+      itens.push(criarItem(laneBonus, "coleta"));
+    }
+  }
+
+  function criarItem(lane, tipo) {
+    return { lane: lane, tipo: tipo, z: Z_SPAWN, resolvido: false };
+  }
+
+  function criarParticulas(x, y, cor) {
+    for (var i = 0; i < 12; i++) {
+      var angulo = Math.random() * Math.PI * 2;
+      var velocidadeParticula = 60 + Math.random() * 90;
+      particulas.push({
+        x: x, y: y,
+        vx: Math.cos(angulo) * velocidadeParticula,
+        vy: Math.sin(angulo) * velocidadeParticula - 60,
+        vida: 0.5 + Math.random() * 0.3,
+        cor: cor
+      });
+    }
+  }
+
+  function finalizarJogo() {
+    jogoAcabou = true;
+    tempoTremor = 0.4;
+    flashVermelho = 0.3;
+    var pontuacaoFinal = Math.floor(distancia) + estrelasColetadas;
+
+    var bateuRecorde = pontuacaoFinal > recorde;
+    if (bateuRecorde) { recorde = pontuacaoFinal; salvarRecorde(recorde); recordeEl.textContent = recorde; }
+
+    setTimeout(function () {
+      overlayTitulo.textContent = "🚧 Ops, esbarrou!";
+      overlayResumo.textContent = "Pontos: " + pontuacaoFinal + " • Estrelas: " + estrelasColetadas;
+      overlayRecordeNovo.classList.toggle("escondido", !bateuRecorde);
+      overlay.classList.add("mostrar");
+    }, 350);
+  }
+
+  function moverEsquerda() { if (!jogoAcabou && laneAtual > -1) laneAtual--; }
+  function moverDireita() { if (!jogoAcabou && laneAtual < 1) laneAtual++; }
+  function pular() { if (!jogoAcabou && !pulando && !abaixando) { pulando = true; tempoPulo = 0; } }
+  function abaixar() { if (!jogoAcabou && !abaixando && !pulando) { abaixando = true; tempoAbaixar = 0; } }
+
+  document.addEventListener("keydown", function (evento) {
+    var teclas = {
+      ArrowLeft: moverEsquerda, a: moverEsquerda, A: moverEsquerda,
+      ArrowRight: moverDireita, d: moverDireita, D: moverDireita,
+      ArrowUp: pular, w: pular, W: pular, " ": pular,
+      ArrowDown: abaixar, s: abaixar, S: abaixar
+    };
+    if (teclas[evento.key]) { evento.preventDefault(); teclas[evento.key](); }
+  });
+
+  document.getElementById("btnEsquerda").addEventListener("click", moverEsquerda);
+  document.getElementById("btnDireita").addEventListener("click", moverDireita);
+  document.getElementById("btnPular").addEventListener("click", pular);
+  document.getElementById("btnAbaixar").addEventListener("click", abaixar);
+  btnReiniciar.addEventListener("click", function () {
+    overlay.classList.remove("mostrar");
+    document.getElementById("telaNivel").classList.add("mostrar");
+    jogoAcabou = true; // garante que o laço de animação em andamento pare sozinho
+    if (idAnimacao) cancelAnimationFrame(idAnimacao);
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+
+  // ---------- gestos de arrastar (swipe) ----------
+  var toqueInicioX = null, toqueInicioY = null;
+  canvas.addEventListener("touchstart", function (e) {
+    var t = e.changedTouches[0];
+    toqueInicioX = t.clientX; toqueInicioY = t.clientY;
+  }, { passive: true });
+  canvas.addEventListener("touchend", function (e) {
+    if (toqueInicioX === null) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - toqueInicioX;
+    var dy = t.clientY - toqueInicioY;
+    var LIMIAR = 30;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > LIMIAR) moverDireita();
+      else if (dx < -LIMIAR) moverEsquerda();
+    } else {
+      if (dy < -LIMIAR) pular();
+      else if (dy > LIMIAR) abaixar();
+    }
+    toqueInicioX = null; toqueInicioY = null;
+  }, { passive: true });
+
+  // ---------- Desenho ----------
+
+  function desenhar() {
+    ctx.save();
+    if (tempoTremor > 0) {
+      ctx.translate((Math.random() - 0.5) * 10 * (tempoTremor / 0.4), (Math.random() - 0.5) * 10 * (tempoTremor / 0.4));
+    }
+
+    desenharCenario();
+    desenharFaixasVelocidade();
+
+    var itensOrdenados = itens.slice().sort(function (a, b) { return b.z - a.z; });
+    itensOrdenados.forEach(desenharItem);
+
+    desenharJogador();
+    desenharParticulas();
+
+    ctx.restore();
+
+    if (flashVermelho > 0) {
+      ctx.fillStyle = "rgba(239, 68, 68, " + (flashVermelho / 0.3 * 0.35) + ")";
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
+
+    if (tempoDecorrido < imaAtivoAte) desenharIndicadorIma();
+    if (temEscudo) desenharIndicadorEscudo();
+  }
+
+  function desenharCenario() {
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+    ctx.fillStyle = "#dbeafe";
+    ctx.fillRect(0, 0, CANVAS_W, HORIZON_Y);
+
+    var margemPiso = 1.75;
+    var xEsqPerto = telaX(-margemPiso, 0), xDirPerto = telaX(margemPiso, 0);
+    var xEsqLonge = telaX(-margemPiso, Z_SPAWN), xDirLonge = telaX(margemPiso, Z_SPAWN);
+
+    ctx.fillStyle = "#f5ead0";
+    ctx.beginPath();
+    ctx.moveTo(xEsqPerto, NEAR_Y + 40);
+    ctx.lineTo(xDirPerto, NEAR_Y + 40);
+    ctx.lineTo(xDirLonge, HORIZON_Y);
+    ctx.lineTo(xEsqLonge, HORIZON_Y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#a5b4fc";
+    ctx.beginPath();
+    ctx.moveTo(0, NEAR_Y + 40);
+    ctx.lineTo(xEsqPerto, NEAR_Y + 40);
+    ctx.lineTo(xEsqLonge, HORIZON_Y);
+    ctx.lineTo(0, HORIZON_Y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(CANVAS_W, NEAR_Y + 40);
+    ctx.lineTo(xDirPerto, NEAR_Y + 40);
+    ctx.lineTo(xDirLonge, HORIZON_Y);
+    ctx.lineTo(CANVAS_W, HORIZON_Y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(30,41,59,0.15)";
+    ctx.lineWidth = 2;
+    for (var i = 1; i <= 4; i++) {
+      var y = HORIZON_Y + i * ((NEAR_Y + 40 - HORIZON_Y) / 5);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(xEsqPerto * (i / 5) + xEsqLonge * (1 - i / 5), y);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.35)";
+    ctx.lineWidth = 2;
+    [-0.5, 0.5].forEach(function (limite) {
+      ctx.beginPath();
+      for (var z = 0; z <= Z_SPAWN; z += 1) {
+        var x = telaX(limite, z);
+        var yy = telaY(z);
+        if (z === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    });
+  }
+
+  function desenharFaixasVelocidade() {
+    ctx.strokeStyle = "rgba(255,255,255,0.7)";
+    ctx.lineWidth = 3;
+    faixasVelocidade.forEach(function (f) {
+      var s = escala(f.z);
+      var x = telaX(f.lane, f.z);
+      var y1 = telaY(f.z);
+      var y2 = telaY(f.z + 1.4);
+      ctx.globalAlpha = s * 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x, y1);
+      ctx.lineTo(x, y2);
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function desenharEstrela(cx, cy, raioExterno, raioInterno, cor, rotacao) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotacao);
+    ctx.beginPath();
+    for (var i = 0; i < 10; i++) {
+      var raio = i % 2 === 0 ? raioExterno : raioInterno;
+      var angulo = (Math.PI / 5) * i - Math.PI / 2;
+      var px = Math.cos(angulo) * raio, py = Math.sin(angulo) * raio;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = cor;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function desenharItem(item) {
+    var s = escala(item.z);
+    var x = telaX(item.lane, item.z);
+    var yBase = telaY(item.z);
+    ctx.globalAlpha = Math.max(s, 0.15);
+
+    if (item.tipo === "coleta") {
+      var pulso = 1 + Math.sin(tempoDecorrido * 6 + item.lane) * 0.12;
+      desenharEstrela(x, yBase - 30 * s, 20 * s * pulso, 9 * s * pulso, "#fbbf24", tempoDecorrido * 1.5);
+    } else if (item.tipo === "ima") {
+      desenharIma(x, yBase - 28 * s, 22 * s);
+    } else if (item.tipo === "escudo") {
+      desenharEscudo(x, yBase - 28 * s, 22 * s);
+    } else if (item.tipo === "pular") {
+      desenharMochila(x, yBase, 34 * s);
+    } else if (item.tipo === "abaixar") {
+      desenharBarreira(x, yBase, 40 * s, s);
+    } else if (item.tipo === "desviar") {
+      desenharLixeira(x, yBase, 30 * s, 60 * s);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function desenharIma(cx, cy, r) {
+    // ímã em ferradura: arco no topo + duas pernas descendo + pontas prateadas
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    var raioArco = r * 0.55;
+    var anguloIni = Math.PI * 1.15, anguloFim = Math.PI * 1.85;
+    var pontaEsq = { x: Math.cos(anguloIni) * raioArco, y: Math.sin(anguloIni) * raioArco };
+    var pontaDir = { x: Math.cos(anguloFim) * raioArco, y: Math.sin(anguloFim) * raioArco };
+    var baseY = r * 0.55;
+
+    ctx.lineWidth = r * 0.32;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#dc2626";
+    ctx.beginPath();
+    ctx.arc(0, 0, raioArco, anguloIni, anguloFim, false);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pontaEsq.x, pontaEsq.y); ctx.lineTo(pontaEsq.x, baseY);
+    ctx.moveTo(pontaDir.x, pontaDir.y); ctx.lineTo(pontaDir.x, baseY);
+    ctx.stroke();
+
+    ctx.fillStyle = "#e5e7eb";
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 1.5;
+    [pontaEsq, pontaDir].forEach(function (p) {
+      arredondado(p.x - r * 0.22, baseY - r * 0.14, r * 0.44, r * 0.24, r * 0.06);
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  }
+
+  function desenharEscudo(cx, cy, r) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.quadraticCurveTo(r, -r * 0.7, r * 0.85, 0);
+    ctx.quadraticCurveTo(r * 0.7, r * 0.8, 0, r);
+    ctx.quadraticCurveTo(-r * 0.7, r * 0.8, -r * 0.85, 0);
+    ctx.quadraticCurveTo(-r, -r * 0.7, 0, -r);
+    ctx.closePath();
+    ctx.fillStyle = "#3b82f6";
+    ctx.fill();
+    ctx.strokeStyle = "#1e40af";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#bfdbfe";
+    ctx.fillRect(-r * 0.12, -r * 0.5, r * 0.24, r);
+    ctx.fillRect(-r * 0.5, -r * 0.12, r, r * 0.24);
+    ctx.restore();
+  }
+
+  function desenharMochila(cx, cyBase, tam) {
+    ctx.save();
+    ctx.translate(cx, cyBase);
+    ctx.fillStyle = "#dc2626";
+    arredondado(-tam * 0.45, -tam, tam * 0.9, tam, tam * 0.18);
+    ctx.fill();
+    ctx.fillStyle = "#b91c1c";
+    arredondado(-tam * 0.28, -tam * 0.55, tam * 0.56, tam * 0.4, tam * 0.12);
+    ctx.fill();
+    ctx.strokeStyle = "#7f1d1d";
+    ctx.lineWidth = tam * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(-tam * 0.2, -tam);
+    ctx.lineTo(-tam * 0.2, -tam * 1.15);
+    ctx.moveTo(tam * 0.2, -tam);
+    ctx.lineTo(tam * 0.2, -tam * 1.15);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function desenharBarreira(cx, cyBase, largura, s) {
+    var altura = 16 * s;
+    var yTopo = HORIZON_Y + (cyBase - HORIZON_Y) * 0.42;
+    ctx.save();
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 4 * s;
+    ctx.beginPath();
+    ctx.moveTo(cx - largura * 0.45, yTopo - 30 * s);
+    ctx.lineTo(cx - largura * 0.45, yTopo);
+    ctx.moveTo(cx + largura * 0.45, yTopo - 30 * s);
+    ctx.lineTo(cx + largura * 0.45, yTopo);
+    ctx.stroke();
+
+    ctx.translate(cx, yTopo);
+    arredondado(-largura / 2, 0, largura, altura, altura * 0.25);
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = "#facc15";
+    ctx.fillRect(-largura / 2, 0, largura, altura);
+    ctx.fillStyle = "#1e293b";
+    var passo = altura * 1.3;
+    for (var x = -largura; x < largura; x += passo) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + altura, 0);
+      ctx.lineTo(x + altura - altura, altura);
+      ctx.lineTo(x - altura, altura);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function desenharLixeira(cx, cyBase, largura, altura) {
+    ctx.save();
+    ctx.translate(cx, cyBase);
+    ctx.fillStyle = "#475569";
+    arredondado(-largura / 2, -altura, largura, altura, largura * 0.15);
+    ctx.fill();
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(-largura / 2 - 3, -altura, largura + 6, altura * 0.14);
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 2;
+    for (var i = 1; i <= 2; i++) {
+      var x = -largura / 2 + (largura / 3) * i;
+      ctx.beginPath();
+      ctx.moveTo(x, -altura * 0.85);
+      ctx.lineTo(x, -altura * 0.1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function arredondado(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function desenharParticulas() {
+    particulas.forEach(function (p) {
+      ctx.globalAlpha = Math.max(p.vida / 0.7, 0);
+      ctx.fillStyle = p.cor;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function desenharIndicadorIma() {
+    ctx.save();
+    ctx.font = "bold 14px Segoe UI";
+    ctx.fillStyle = "#0369a1";
+    ctx.textAlign = "left";
+    ctx.fillText("🧲 Ímã ativo!", 10, 24);
+    ctx.restore();
+  }
+  function desenharIndicadorEscudo() {
+    ctx.save();
+    ctx.font = "bold 14px Segoe UI";
+    ctx.fillStyle = "#1d4ed8";
+    ctx.textAlign = "right";
+    ctx.fillText("🛡️ Escudo pronto", CANVAS_W - 10, 24);
+    ctx.restore();
+  }
+
+  // ---------- Jogador (desenhado em vetor, com animação de corrida) ----------
+
+  function desenharJogador() {
+    var x = telaX(laneVisual, 0);
+    var yPe = NEAR_Y;
+    var offsetPulo = 0;
+
+    if (pulando) {
+      var progresso = tempoPulo / DURACAO_PULO;
+      offsetPulo = Math.sin(Math.PI * progresso) * ALTURA_PULO;
+    }
+
+    ctx.save();
+    ctx.translate(x, yPe - offsetPulo);
+    ctx.rotate(inclinacao * 0.15);
+
+    var piscando = tempoDecorrido < invulneravelAte && Math.floor(tempoDecorrido * 14) % 2 === 0;
+    if (piscando) ctx.globalAlpha = 0.35;
+
+    if (abaixando) {
+      desenharCorpoAbaixado();
+    } else if (pulando) {
+      desenharCorpoPulando();
+    } else {
+      desenharCorpoCorrendo();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  var COR_PELE = "#f2c9a0", COR_CAMISA = "#3b82f6", COR_CALCA = "#1e293b", COR_MOCHILA = "#ef4444", COR_CABELO = "#3f2a1d", COR_TENIS = "#f8fafc";
+
+  function desenharCorpoCorrendo() {
+    var balanco = Math.sin(faseCorrida);
+    var anguloPerna = balanco * 0.7;
+    desenharPernas(anguloPerna, -anguloPerna, 0);
+    desenharBracos(-anguloPerna * 0.8, anguloPerna * 0.8);
+    desenharTroncoECabeca(Math.abs(balanco) * 3);
+  }
+
+  function desenharCorpoPulando() {
+    desenharPernas(-1.1, -0.7, 0);
+    desenharBracos(-2.2, -2.0);
+    desenharTroncoECabeca(-6);
+  }
+
+  function desenharCorpoAbaixado() {
+    ctx.save();
+    ctx.scale(1, 0.6);
+    desenharPernas(0.9, -0.9, 0);
+    desenharBracos(0.6, -0.6);
+    desenharTroncoECabeca(0);
+    ctx.restore();
+  }
+
+  function desenharPernas(angulo1, angulo2, extra) {
+    [angulo1, angulo2].forEach(function (angulo) {
+      var quadrilX = 0, quadrilY = -30;
+      var peX = Math.sin(angulo) * 22, peY = quadrilY + Math.cos(angulo) * 26 + 4;
+      ctx.strokeStyle = COR_CALCA;
+      ctx.lineWidth = 9;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(quadrilX, quadrilY);
+      ctx.lineTo(peX, peY);
+      ctx.stroke();
+      ctx.fillStyle = COR_TENIS;
+      ctx.beginPath();
+      ctx.ellipse(peX + Math.sign(angulo || 1) * 4, peY + 2, 9, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function desenharBracos(angulo1, angulo2) {
+    [angulo1, angulo2].forEach(function (angulo) {
+      var ombroX = 0, ombroY = -55;
+      var maoX = Math.sin(angulo) * 20, maoY = ombroY + Math.cos(angulo) * 22 + 4;
+      ctx.strokeStyle = COR_CAMISA;
+      ctx.lineWidth = 7;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(ombroX, ombroY);
+      ctx.lineTo(maoX, maoY);
+      ctx.stroke();
+      ctx.fillStyle = COR_PELE;
+      ctx.beginPath();
+      ctx.arc(maoX, maoY, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function desenharTroncoECabeca(inclinacaoExtra) {
+    ctx.save();
+    ctx.rotate((inclinacaoExtra || 0) * 0.01);
+
+    // mochila (espiando pelo lado direito do corpo, senão fica escondida atrás do tronco)
+    ctx.fillStyle = COR_MOCHILA;
+    arredondado(6, -58, 20, 32, 6);
+    ctx.fill();
+    ctx.strokeStyle = "#7f1d1d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(10, -58); ctx.lineTo(10, -50);
+    ctx.stroke();
+
+    // tronco
+    ctx.fillStyle = COR_CAMISA;
+    arredondado(-16, -62, 32, 34, 10);
+    ctx.fill();
+
+    // cabeça
+    ctx.fillStyle = COR_PELE;
+    ctx.beginPath();
+    ctx.arc(0, -76, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // cabelo
+    ctx.fillStyle = COR_CABELO;
+    ctx.beginPath();
+    ctx.arc(0, -80, 15.5, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    // rosto
+    ctx.fillStyle = "#1e293b";
+    ctx.beginPath();
+    ctx.arc(-5, -76, 1.6, 0, Math.PI * 2);
+    ctx.arc(5, -76, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#1e293b";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, -72, 4, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+</script>
+</body>
+</html>

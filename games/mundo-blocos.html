@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mundo de Blocos</title>
+<style>
+  :root { --azul:#2563eb; --fundo:#0f172a; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: white; overflow: hidden;
+  }
+  a.voltar {
+    position: fixed; top: 14px; left: 14px; z-index: 20;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  #canvas3d { position: fixed; inset: 0; display: block; }
+
+  #telaInicial, #telaPausa {
+    position: fixed; inset: 0; z-index: 30;
+    background: linear-gradient(160deg, #1e3a8a, #0f172a);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    text-align: center; padding: 20px;
+  }
+  #telaInicial h1, #telaPausa h1 { margin: 0; font-size: 1.8rem; }
+  #telaInicial p { max-width: 480px; color: #cbd5e1; line-height: 1.5; }
+  #telaInicial button, #telaPausa button {
+    background: #22c55e; color: white; border: none; font-weight: 700; font-size: 1.1rem;
+    padding: 14px 36px; border-radius: 999px; cursor: pointer; margin-top: 8px;
+  }
+  #telaPausa button.secundario {
+    background: rgba(255,255,255,0.12); color: #fca5a5; font-size: 0.95rem; padding: 10px 24px;
+  }
+  .escondido { display: none !important; }
+
+  #mira {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 18px; height: 18px; z-index: 10; pointer-events: none;
+  }
+  #mira::before, #mira::after {
+    content: ""; position: absolute; background: white; opacity: 0.85;
+    box-shadow: 0 0 2px rgba(0,0,0,0.6);
+  }
+  #mira::before { top: 8px; left: 0; width: 18px; height: 2px; }
+  #mira::after { top: 0; left: 8px; width: 2px; height: 18px; }
+
+  #barraProgressoContainer {
+    position: fixed; top: calc(50% + 22px); left: 50%; transform: translateX(-50%);
+    width: 90px; height: 8px; background: rgba(0,0,0,0.45); border-radius: 4px; z-index: 10;
+    overflow: hidden; pointer-events: none;
+  }
+  #barraProgressoPreenchimento { height: 100%; width: 0%; background: #22c55e; }
+
+  #hotbar {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+    display: flex; gap: 6px; background: rgba(15,23,42,0.6); padding: 8px; border-radius: 14px;
+    flex-wrap: wrap; max-width: 94vw; justify-content: center;
+  }
+  .slot {
+    width: 52px; height: 52px; border-radius: 8px; position: relative; cursor: pointer;
+    border: 3px solid rgba(255,255,255,0.25); overflow: hidden;
+  }
+  .slot.selecionado { border-color: #fbbf24; }
+  .slot canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+  .slot .numero {
+    position: absolute; top: 1px; left: 3px; font-size: 0.65rem; font-weight: 800;
+    color: white; text-shadow: 0 0 3px black;
+  }
+
+  #ajuda {
+    position: fixed; top: 14px; right: 14px; z-index: 10; text-align: right;
+    font-size: 0.78rem; color: rgba(255,255,255,0.75); background: rgba(15,23,42,0.5);
+    padding: 8px 12px; border-radius: 10px; line-height: 1.4;
+  }
+
+  #relogio {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 10;
+    font-size: 0.85rem; font-weight: 700; background: rgba(15,23,42,0.5); padding: 6px 14px; border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<div id="avisoRedeCaida" class="escondido" style="position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:60; background:#dc2626; color:white; font-weight:700; font-size:0.9rem; padding:10px 20px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,0.35); text-align:center; max-width:90vw;">
+  ⚠️ Conexão com o servidor perdida.
+  <button id="btnRecarregarRede" style="margin-left:8px; background:white; color:#dc2626; border:none; border-radius:999px; padding:4px 12px; font-weight:700; cursor:pointer;">Recarregar</button>
+</div>
+
+<canvas id="canvas3d"></canvas>
+<div id="mira" class="escondido"></div>
+<div id="barraProgressoContainer" class="escondido">
+  <div id="barraProgressoPreenchimento"></div>
+</div>
+<div id="hotbar" class="escondido"></div>
+<div id="ajuda" class="escondido">
+  WASD: andar • Shift: correr (nadando: mergulhar) • Mouse: olhar • Espaço: pular/nadar pra cima<br>
+  2x Espaço: ligar/desligar voo (Espaço/Shift sobe/desce voando)<br>
+  Segure o clique esquerdo: quebrar (ferramenta certa é bem mais rápida)<br>
+  Clique direito: colocar • 1-9: escolher item • Esc: pausar<br>
+  ⛏️ picareta: pedra/ouro/tijolo • 🪓 machado: tronco • 🪏 pá: terra/areia/grama/neve • 🗡️ espada: folhas
+</div>
+<div id="relogio" class="escondido">☀️ Dia</div>
+<div id="jogadoresOnline" class="escondido" style="position:fixed; top:52px; left:50%; transform:translateX(-50%); z-index:10; font-size:0.8rem; font-weight:700; background:rgba(124,58,237,0.7); padding:4px 12px; border-radius:999px;"></div>
+
+<div id="telaInicial">
+  <h1>🧱 Mundo de Blocos</h1>
+  <p>
+    Um mundo pequeno, seu, pra explorar e construir — feito do zero pra este site (não é o Minecraft,
+    é um sandbox de blocos original). Ande, pule, quebre e coloque blocos. Seu mundo fica salvo neste
+    navegador automaticamente.
+  </p>
+  <p style="font-size:0.85rem; color:#94a3b8;">Precisa de mouse e teclado (não funciona bem em celular/tablet).</p>
+  <button id="btnComecar">▶️ Jogar sozinho</button>
+
+  <div style="margin-top:10px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.15); width:100%; max-width:340px;">
+    <p style="font-size:0.85rem; color:#cbd5e1; margin:0 0 10px;">🌐 Ou entre numa sala compartilhada com colegas:</p>
+    <input type="text" id="inputSalaMundo" placeholder="Código da sala (ex: turma1)"
+      style="width:100%; padding:10px 12px; border-radius:10px; border:none; font-size:0.95rem; text-align:center; margin-bottom:8px; box-sizing:border-box;">
+    <button id="btnEntrarSalaMundo" style="width:100%; background:#7c3aed;">Entrar na sala</button>
+    <p id="statusRedeMundo" style="font-size:0.85rem; color:#c4b5fd; min-height:1.4em; margin:8px 0 0;"></p>
+  </div>
+</div>
+
+<div id="telaPausa" class="escondido">
+  <h1>⏸️ Pausado</h1>
+  <button id="btnContinuar">▶️ Continuar</button>
+  <button id="btnResetarMundo" class="secundario">🔄 Resetar mundo (apaga tudo e gera outro)</button>
+</div>
+
+<script src="../lib/three.min.js"></script>
+<script src="../lib/rede.js"></script>
+<script>
+  // ==================== Constantes do mundo ====================
+  var TAMANHO_MUNDO = 80;      // blocos em X e Z
+  var ALTURA_MUNDO = 40;       // blocos em Y
+  var CHAVE_SALVAR = "mundoBlocos_save_v1";
+
+  var TIPO = {
+    AR: 0, GRAMA: 1, TERRA: 2, PEDRA: 3, AREIA: 4, TRONCO: 5, FOLHAS: 6, TIJOLO: 7, VIDRO: 8,
+    AGUA: 9, NEVE: 10, OURO: 11, LA_VERMELHA: 12, LA_AZUL: 13
+  };
+  var FERRAMENTA = { PICARETA: "picareta", MACHADO: "machado", PA: "pa", ESPADA: "espada" };
+  var NOMES_FERRAMENTA = { picareta: "Picareta", machado: "Machado", pa: "Pá", espada: "Espada" };
+
+  var LISTA_HOTBAR = [
+    TIPO.GRAMA, TIPO.TERRA, TIPO.PEDRA, TIPO.AREIA, TIPO.TRONCO, TIPO.FOLHAS, TIPO.TIJOLO, TIPO.VIDRO,
+    TIPO.AGUA, TIPO.NEVE, TIPO.OURO, TIPO.LA_VERMELHA, TIPO.LA_AZUL,
+    FERRAMENTA.PICARETA, FERRAMENTA.MACHADO, FERRAMENTA.PA, FERRAMENTA.ESPADA
+  ];
+  var NOMES_BLOCO = {};
+  NOMES_BLOCO[TIPO.GRAMA] = "Grama"; NOMES_BLOCO[TIPO.TERRA] = "Terra"; NOMES_BLOCO[TIPO.PEDRA] = "Pedra";
+  NOMES_BLOCO[TIPO.AREIA] = "Areia"; NOMES_BLOCO[TIPO.TRONCO] = "Tronco"; NOMES_BLOCO[TIPO.FOLHAS] = "Folhas";
+  NOMES_BLOCO[TIPO.TIJOLO] = "Tijolo"; NOMES_BLOCO[TIPO.VIDRO] = "Vidro"; NOMES_BLOCO[TIPO.AGUA] = "Água";
+  NOMES_BLOCO[TIPO.NEVE] = "Neve"; NOMES_BLOCO[TIPO.OURO] = "Ouro"; NOMES_BLOCO[TIPO.LA_VERMELHA] = "Lã vermelha";
+  NOMES_BLOCO[TIPO.LA_AZUL] = "Lã azul";
+
+  // tempo (em segundos) pra quebrar cada bloco sem a ferramenta ideal
+  var TEMPO_BASE_QUEBRA = {};
+  TEMPO_BASE_QUEBRA[TIPO.GRAMA] = 0.6; TEMPO_BASE_QUEBRA[TIPO.TERRA] = 0.5; TEMPO_BASE_QUEBRA[TIPO.PEDRA] = 1.8;
+  TEMPO_BASE_QUEBRA[TIPO.AREIA] = 0.4; TEMPO_BASE_QUEBRA[TIPO.TRONCO] = 1.0; TEMPO_BASE_QUEBRA[TIPO.FOLHAS] = 0.3;
+  TEMPO_BASE_QUEBRA[TIPO.TIJOLO] = 1.2; TEMPO_BASE_QUEBRA[TIPO.VIDRO] = 0.3; TEMPO_BASE_QUEBRA[TIPO.NEVE] = 0.3;
+  TEMPO_BASE_QUEBRA[TIPO.OURO] = 2.2; TEMPO_BASE_QUEBRA[TIPO.LA_VERMELHA] = 0.4; TEMPO_BASE_QUEBRA[TIPO.LA_AZUL] = 0.4;
+
+  // qual ferramenta é ideal (mais rápida) pra cada tipo de bloco
+  var FERRAMENTA_IDEAL_POR_BLOCO = {};
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.PEDRA] = FERRAMENTA.PICARETA;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.OURO] = FERRAMENTA.PICARETA;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.TIJOLO] = FERRAMENTA.PICARETA;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.TRONCO] = FERRAMENTA.MACHADO;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.TERRA] = FERRAMENTA.PA;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.AREIA] = FERRAMENTA.PA;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.GRAMA] = FERRAMENTA.PA;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.NEVE] = FERRAMENTA.PA;
+  FERRAMENTA_IDEAL_POR_BLOCO[TIPO.FOLHAS] = FERRAMENTA.ESPADA;
+
+  var FATOR_FERRAMENTA = 4.5; // quanto mais rápido quebra com a ferramenta certa
+
+  function tempoDeQuebra(tipoBloco) {
+    var base = TEMPO_BASE_QUEBRA[tipoBloco] !== undefined ? TEMPO_BASE_QUEBRA[tipoBloco] : 0.6;
+    var ferramentaIdeal = FERRAMENTA_IDEAL_POR_BLOCO[tipoBloco];
+    if (ferramentaIdeal && blocoSelecionado === ferramentaIdeal) return base / FATOR_FERRAMENTA;
+    return base;
+  }
+
+  var TIPOS_TRANSPARENTES = [TIPO.AR, TIPO.AGUA, TIPO.VIDRO];
+  function ehTransparente(tipo) { return TIPOS_TRANSPARENTES.indexOf(tipo) !== -1; }
+  function ehSolido(tipo) { return tipo !== TIPO.AR && tipo !== TIPO.AGUA; }
+
+  var MAX_INSTANCIAS_POR_TIPO = Math.min(30000, TAMANHO_MUNDO * TAMANHO_MUNDO * 3);
+  var ALCANCE_INTERACAO = 6.5;
+
+  var ALTURA_JOGADOR = 1.7, ALTURA_OLHOS = 1.55, RAIO_JOGADOR = 0.32;
+  var GRAVIDADE = 22, VELOCIDADE_PULO = 8.6, VELOCIDADE_ANDAR = 5.2;
+  var GRAVIDADE_AGUA = 5, VELOCIDADE_MAX_AFUNDAR = 2.5, EMPUXO_NADANDO = 14, VELOCIDADE_VOO = 8.5;
+  var ALTURA_MAX_DEGRAU = 1.05;            // até que altura o jogador "sobe sozinho" um degrau/margem
+  var INCREMENTO_DEGRAU = 0.15;            // resolução da varredura vertical do auto-degrau
+  var VELOCIDADE_MAX_SUBIDA_NADANDO = 4.5; // trava a velocidade de subida ao nadar (evita solavanco)
+  var EMPUXO_PASSIVO_AGUA = 7;             // flutuação: a água empurra de volta pra superfície mesmo sem apertar nada
+  var DURACAO_DIA = 240; // segundos para um ciclo completo dia/noite
+
+  // ==================== Estado do mundo ====================
+  var mundo = new Uint8Array(TAMANHO_MUNDO * TAMANHO_MUNDO * ALTURA_MUNDO);
+  var edicoes = {}; // "x,y,z" -> tipo (0 = removido/ar), só as mudanças do jogador
+  var semente = { ox: 0, oz: 0 };
+  var vilaInfo = null; // preenchido por gerarVila(): { centro:{x,z,y}, raio, pontosDeMorada:[...] }
+
+  function indice(x, y, z) {
+    return x + z * TAMANHO_MUNDO + y * TAMANHO_MUNDO * TAMANHO_MUNDO;
+  }
+  function dentroDoMundo(x, y, z) {
+    return x >= 0 && x < TAMANHO_MUNDO && y >= 0 && y < ALTURA_MUNDO && z >= 0 && z < TAMANHO_MUNDO;
+  }
+  function blocoEm(x, y, z) {
+    x = Math.floor(x); y = Math.floor(y); z = Math.floor(z);
+    if (!dentroDoMundo(x, y, z)) return TIPO.AR;
+    return mundo[indice(x, y, z)];
+  }
+  function definirBloco(x, y, z, tipo) {
+    if (!dentroDoMundo(x, y, z)) return;
+    mundo[indice(x, y, z)] = tipo;
+  }
+
+  function criarPRNG(semente32) {
+    var s = semente32 >>> 0;
+    return function () {
+      s = (s + 0x6D2B79F5) >>> 0;
+      var t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function ruidoTerreno(x, z) {
+    return (
+      Math.sin(x * 0.15) * Math.cos(z * 0.15) * 3 +
+      Math.sin(x * 0.35 + 1.7) * Math.cos(z * 0.28 + 0.4) * 1.4 +
+      Math.sin(x * 0.06 - 0.5) * Math.cos(z * 0.08 + 1.1) * 2.2
+    );
+  }
+
+  var NIVEL_DO_MAR = 9;
+  var LINHA_DA_NEVE = 15;
+
+  // vila (geração procedural de casinhas + praça, ver gerarVila())
+  var NUM_CASAS_VILA = 6, RAIO_CASAS_VILA = 9, RAIO_NIVELAMENTO_VILA = 15;
+  var MARGEM_BORDA_VILA = RAIO_NIVELAMENTO_VILA + 3;
+
+  function gerarTerrenoBase() {
+    mundo.fill(TIPO.AR);
+    var rngMinerio = criarPRNG(Math.floor(semente.ox * 733 + semente.oz * 917 + 5));
+    for (var x = 0; x < TAMANHO_MUNDO; x++) {
+      for (var z = 0; z < TAMANHO_MUNDO; z++) {
+        var altura = Math.round(10 + ruidoTerreno(x + semente.ox, z + semente.oz));
+        altura = Math.max(4, Math.min(ALTURA_MUNDO - 8, altura));
+        var praia = altura <= NIVEL_DO_MAR + 1;
+        for (var y = 0; y <= altura; y++) {
+          var tipo;
+          if (y === altura) tipo = praia ? TIPO.AREIA : (altura >= LINHA_DA_NEVE ? TIPO.NEVE : TIPO.GRAMA);
+          else if (y >= altura - 3) tipo = praia ? TIPO.AREIA : TIPO.TERRA;
+          else {
+            tipo = (y < altura - 5 && rngMinerio() < 0.015) ? TIPO.OURO : TIPO.PEDRA;
+          }
+          definirBloco(x, y, z, tipo);
+        }
+        if (altura < NIVEL_DO_MAR) {
+          for (var yAgua = altura + 1; yAgua <= NIVEL_DO_MAR; yAgua++) definirBloco(x, yAgua, z, TIPO.AGUA);
+        }
+      }
+    }
+
+    // vila: gerada antes das árvores, pra reservar o terreno e a área de exclusão abaixo
+    var rngVila = criarPRNG(Math.floor(semente.ox * 419 + semente.oz * 271 + 13));
+    vilaInfo = gerarVila(rngVila);
+
+    var rng = criarPRNG(Math.floor(semente.ox * 1000 + semente.oz * 37 + 1));
+    var totalArvores = Math.round(TAMANHO_MUNDO * TAMANHO_MUNDO * 0.0137);
+    var arvoresPlantadas = 0, tentativas = 0, maxTentativas = totalArvores * 18;
+    while (arvoresPlantadas < totalArvores && tentativas < maxTentativas) {
+      tentativas++;
+      var tx = 3 + Math.floor(rng() * (TAMANHO_MUNDO - 6));
+      var tz = 3 + Math.floor(rng() * (TAMANHO_MUNDO - 6));
+      if (vilaInfo) {
+        var distVila = Math.max(Math.abs(tx - vilaInfo.centro.x), Math.abs(tz - vilaInfo.centro.z));
+        if (distVila <= vilaInfo.raio) continue; // não planta árvore dentro da vila (clareira arrumada)
+      }
+      var ty = alturaDoTerreno(tx, tz);
+      if (blocoEm(tx, ty, tz) !== TIPO.GRAMA) continue;
+      plantarArvore(tx, ty + 1, tz, rng);
+      arvoresPlantadas++;
+    }
+  }
+
+  function alturaDoTerreno(x, z) {
+    for (var y = ALTURA_MUNDO - 1; y >= 0; y--) {
+      if (blocoEm(x, y, z) !== TIPO.AR) return y;
+    }
+    return 0;
+  }
+
+  function plantarArvore(x, yBase, z, rng) {
+    var altura = 3 + Math.floor(rng() * 2);
+    for (var i = 0; i < altura; i++) definirBloco(x, yBase + i, z, TIPO.TRONCO);
+    var topo = yBase + altura;
+    for (var dx = -2; dx <= 2; dx++) {
+      for (var dz = -2; dz <= 2; dz++) {
+        for (var dy = -1; dy <= 1; dy++) {
+          if (Math.abs(dx) === 2 && Math.abs(dz) === 2) continue; // cantos afastados, copa mais redonda
+          if (dx === 0 && dz === 0 && dy <= 0) continue; // não sobrepõe o tronco
+          if (blocoEm(x + dx, topo + dy, z + dz) === TIPO.AR) {
+            definirBloco(x + dx, topo + dy, z + dz, TIPO.FOLHAS);
+          }
+        }
+      }
+    }
+    definirBloco(x, topo + 2, z, TIPO.FOLHAS);
+  }
+
+  // ==================== Vila (geração procedural de casinhas + praça) ====================
+  // Tudo aqui é determinístico a partir do "rng" recebido (semeado pela "semente" do mundo),
+  // igual ao esquema já usado pras árvores/minério — assim, no modo rede, todos os jogadores
+  // da mesma sala geram a MESMA vila de forma independente, sem precisar transmitir nada.
+
+  function preencherRetangulo(x0, z0, x1, z1, y, tipo) {
+    for (var x = x0; x <= x1; x++) {
+      for (var z = z0; z <= z1; z++) definirBloco(x, y, z, tipo);
+    }
+  }
+
+  function construirParedes(x0, z0, x1, z1, yBase, yTopo, tipoParede) {
+    for (var y = yBase; y <= yTopo; y++) {
+      for (var x = x0; x <= x1; x++) {
+        definirBloco(x, y, z0, tipoParede);
+        definirBloco(x, y, z1, tipoParede);
+      }
+      for (var z = z0; z <= z1; z++) {
+        definirBloco(x0, y, z, tipoParede);
+        definirBloco(x1, y, z, tipoParede);
+      }
+    }
+  }
+
+  function construirTelhadoSimples(x0, z0, x1, z1, y, tipoTelhado) {
+    preencherRetangulo(x0, z0, x1, z1, y, tipoTelhado);
+    if (x1 - x0 >= 2 && z1 - z0 >= 2) {
+      preencherRetangulo(x0 + 1, z0 + 1, x1 - 1, z1 - 1, y + 1, tipoTelhado);
+    }
+  }
+
+  // ladoFrente: 0 = porta na parede +Z, 1 = porta na parede -Z, 2 = porta na parede +X, 3 = porta na parede -X
+  function abrirPortaEJanelas(x0, z0, x1, z1, yBase, ladoFrente) {
+    var meioX = Math.floor((x0 + x1) / 2);
+    var meioZ = Math.floor((z0 + z1) / 2);
+    if (ladoFrente === 0 || ladoFrente === 1) {
+      var zPorta = (ladoFrente === 0) ? z1 : z0;
+      definirBloco(meioX, yBase, zPorta, TIPO.AR);
+      definirBloco(meioX, yBase + 1, zPorta, TIPO.AR);
+      definirBloco(x0, yBase + 1, meioZ, TIPO.VIDRO);
+      definirBloco(x1, yBase + 1, meioZ, TIPO.VIDRO);
+    } else {
+      var xPorta = (ladoFrente === 2) ? x1 : x0;
+      definirBloco(xPorta, yBase, meioZ, TIPO.AR);
+      definirBloco(xPorta, yBase + 1, meioZ, TIPO.AR);
+      definirBloco(meioX, yBase + 1, z0, TIPO.VIDRO);
+      definirBloco(meioX, yBase + 1, z1, TIPO.VIDRO);
+    }
+  }
+
+  function construirCasa(cx, cz, meiaLargura, meiaProfundidade, alturaParede, tipoParede, tipoTelhado, yBase, ladoFrente) {
+    var x0 = cx - meiaLargura, x1 = cx + meiaLargura;
+    var z0 = cz - meiaProfundidade, z1 = cz + meiaProfundidade;
+    preencherRetangulo(x0, z0, x1, z1, yBase - 1, TIPO.PEDRA); // fundação/piso
+    construirParedes(x0, z0, x1, z1, yBase, yBase + alturaParede - 1, tipoParede);
+    construirTelhadoSimples(x0, z0, x1, z1, yBase + alturaParede, tipoTelhado);
+    abrirPortaEJanelas(x0, z0, x1, z1, yBase, ladoFrente);
+  }
+
+  // casinha de tijolo, telhado vermelho
+  function construirCasaModeloA(cx, cz, yBase, ladoFrente) {
+    construirCasa(cx, cz, 2, 2, 3, TIPO.TIJOLO, TIPO.LA_VERMELHA, yBase, ladoFrente);
+  }
+
+  // casa de tronco, maior, telhado azul, com detalhe de folhagem nos cantos
+  function construirCasaModeloB(cx, cz, yBase, ladoFrente) {
+    construirCasa(cx, cz, 3, 2, 3, TIPO.TRONCO, TIPO.LA_AZUL, yBase, ladoFrente);
+    var x0 = cx - 3, x1 = cx + 3, z0 = cz - 2, z1 = cz + 2, yCanto = yBase + 2;
+    definirBloco(x0, yCanto, z0, TIPO.FOLHAS);
+    definirBloco(x1, yCanto, z0, TIPO.FOLHAS);
+    definirBloco(x0, yCanto, z1, TIPO.FOLHAS);
+    definirBloco(x1, yCanto, z1, TIPO.FOLHAS);
+  }
+
+  function construirPocoDecorativo(cx, cz, y) {
+    for (var x = cx - 1; x <= cx + 1; x++) {
+      for (var z = cz - 1; z <= cz + 1; z++) {
+        definirBloco(x, y, z, (x === cx && z === cz) ? TIPO.AGUA : TIPO.TIJOLO);
+      }
+    }
+    definirBloco(cx - 1, y + 1, cz - 1, TIPO.TRONCO);
+    definirBloco(cx + 1, y + 1, cz - 1, TIPO.TRONCO);
+    definirBloco(cx - 1, y + 1, cz + 1, TIPO.TRONCO);
+    definirBloco(cx + 1, y + 1, cz + 1, TIPO.TRONCO);
+  }
+
+  function construirCaminho(x0, z0, x1, z1, y) {
+    var dx = x1 - x0, dz = z1 - z0;
+    var passos = Math.max(Math.abs(dx), Math.abs(dz));
+    for (var i = 0; i <= passos; i++) {
+      var t = passos === 0 ? 0 : i / passos;
+      definirBloco(Math.round(x0 + dx * t), y, Math.round(z0 + dz * t), TIPO.PEDRA);
+    }
+  }
+
+  function avaliarLocalVila(cx, cz) {
+    if (cx < MARGEM_BORDA_VILA || cx >= TAMANHO_MUNDO - MARGEM_BORDA_VILA ||
+        cz < MARGEM_BORDA_VILA || cz >= TAMANHO_MUNDO - MARGEM_BORDA_VILA) {
+      return null;
+    }
+    var somaAltura = 0, minAltura = Infinity, maxAltura = -Infinity, totalPontos = 0;
+    var passo = 3;
+    for (var dx = -RAIO_NIVELAMENTO_VILA; dx <= RAIO_NIVELAMENTO_VILA; dx += passo) {
+      for (var dz = -RAIO_NIVELAMENTO_VILA; dz <= RAIO_NIVELAMENTO_VILA; dz += passo) {
+        var h = alturaDoTerreno(cx + dx, cz + dz);
+        if (h <= NIVEL_DO_MAR) return null; // não constrói em cima/perto d'água
+        somaAltura += h; totalPontos++;
+        if (h < minAltura) minAltura = h;
+        if (h > maxAltura) maxAltura = h;
+      }
+    }
+    return { alturaMedia: Math.round(somaAltura / totalPontos), variacao: maxAltura - minAltura };
+  }
+
+  function encontrarLocalVila(rng) {
+    var melhor = null;
+    var melhorCx = Math.floor(TAMANHO_MUNDO / 2), melhorCz = Math.floor(TAMANHO_MUNDO / 2);
+    var tentativas = 0, maxTentativas = 40;
+    while (tentativas < maxTentativas) {
+      tentativas++;
+      var cx = MARGEM_BORDA_VILA + Math.floor(rng() * (TAMANHO_MUNDO - 2 * MARGEM_BORDA_VILA));
+      var cz = MARGEM_BORDA_VILA + Math.floor(rng() * (TAMANHO_MUNDO - 2 * MARGEM_BORDA_VILA));
+      var info = avaliarLocalVila(cx, cz);
+      if (info && (melhor === null || info.variacao < melhor.variacao)) {
+        melhor = info; melhorCx = cx; melhorCz = cz;
+        if (info.variacao <= 2) break;
+      }
+    }
+    if (melhor === null) melhor = { alturaMedia: alturaDoTerreno(melhorCx, melhorCz) };
+    return { x: melhorCx, z: melhorCz, altura: Math.max(NIVEL_DO_MAR + 2, melhor.alturaMedia) };
+  }
+
+  function aplainarAreaVila(cx, cz, raio, alturaAlvo) {
+    for (var x = cx - raio; x <= cx + raio; x++) {
+      for (var z = cz - raio; z <= cz + raio; z++) {
+        if (!dentroDoMundo(x, 0, z)) continue;
+        for (var y = 1; y < alturaAlvo; y++) definirBloco(x, y, z, TIPO.TERRA);
+        definirBloco(x, alturaAlvo, z, TIPO.GRAMA);
+        for (var yAr = alturaAlvo + 1; yAr <= alturaAlvo + 9; yAr++) definirBloco(x, yAr, z, TIPO.AR);
+      }
+    }
+  }
+
+  // monta a vila inteira (aplaina o terreno, constrói as casas + praça) e devolve os pontos
+  // de morada (um por casa) pra criarNpcsDaVila() usar depois
+  function gerarVila(rng) {
+    var local = encontrarLocalVila(rng);
+    var cxVila = local.x, czVila = local.z, yAlvo = local.altura;
+
+    aplainarAreaVila(cxVila, czVila, RAIO_NIVELAMENTO_VILA, yAlvo);
+    construirPocoDecorativo(cxVila, czVila, yAlvo + 1);
+
+    var pontosDeMorada = [];
+    var anguloInicial = rng() * Math.PI * 2;
+    for (var i = 0; i < NUM_CASAS_VILA; i++) {
+      var angulo = anguloInicial + (i / NUM_CASAS_VILA) * Math.PI * 2;
+      var casaX = cxVila + Math.round(Math.cos(angulo) * RAIO_CASAS_VILA);
+      var casaZ = czVila + Math.round(Math.sin(angulo) * RAIO_CASAS_VILA);
+      var deltaX = cxVila - casaX, deltaZ = czVila - casaZ;
+      var ladoFrente = Math.abs(deltaX) > Math.abs(deltaZ)
+        ? (deltaX > 0 ? 2 : 3)
+        : (deltaZ > 0 ? 0 : 1);
+      var yBaseCasa = yAlvo + 1;
+      var ehModeloA = (i % 2 === 0);
+      if (ehModeloA) construirCasaModeloA(casaX, casaZ, yBaseCasa, ladoFrente);
+      else construirCasaModeloB(casaX, casaZ, yBaseCasa, ladoFrente);
+
+      construirCaminho(cxVila, czVila, casaX, casaZ, yAlvo);
+
+      var frenteYaw = Math.atan2(casaX - cxVila, casaZ - czVila);
+      var dFrenteX = -Math.sin(frenteYaw), dFrenteZ = -Math.cos(frenteYaw);
+      pontosDeMorada.push({
+        x: Math.round(casaX + dFrenteX * 4),
+        z: Math.round(casaZ + dFrenteZ * 4),
+        y: yAlvo + 1,
+        yaw: frenteYaw,
+        casaX: casaX,
+        casaZ: casaZ,
+        modelo: ehModeloA ? "A" : "B"
+      });
+    }
+
+    return {
+      centro: { x: cxVila, z: czVila, y: yAlvo + 1 },
+      raio: RAIO_NIVELAMENTO_VILA,
+      pontosDeMorada: pontosDeMorada
+    };
+  }
+
+  function aplicarEdicoes() {
+    Object.keys(edicoes).forEach(function (chave) {
+      var partes = chave.split(",").map(Number);
+      definirBloco(partes[0], partes[1], partes[2], edicoes[chave]);
+    });
+  }
+
+  function registrarEdicao(x, y, z, tipo, daRede) {
+    edicoes[x + "," + y + "," + z] = tipo;
+    definirBloco(x, y, z, tipo);
+    if (modoJogo === "rede") {
+      if (!daRede && rede) rede.enviar({ tipo: "bloco", x: x, y: y, z: z, tipoBloco: tipo });
+    } else {
+      salvarJogo();
+    }
+  }
+
+  function salvarJogo() {
+    try {
+      localStorage.setItem(CHAVE_SALVAR, JSON.stringify({ semente: semente, edicoes: edicoes }));
+    } catch (e) { /* sem localStorage disponível: sem problema, só não salva */ }
+  }
+
+  function carregarJogo() {
+    try {
+      var bruto = localStorage.getItem(CHAVE_SALVAR);
+      if (!bruto) return false;
+      var dados = JSON.parse(bruto);
+      semente = dados.semente || { ox: 0, oz: 0 };
+      edicoes = dados.edicoes || {};
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function iniciarMundo() {
+    var carregou = carregarJogo();
+    if (!carregou) {
+      semente = { ox: Math.random() * 1000, oz: Math.random() * 1000 };
+      edicoes = {};
+    }
+    gerarTerrenoBase();
+    aplicarEdicoes();
+  }
+
+  // ==================== Multiplayer (rede local) ====================
+
+  var modoJogo = "solo"; // "solo" | "rede"
+  var rede = null;
+  var jogadoresRemotos = {}; // id -> { grupo: THREE.Group, alvoX, alvoY, alvoZ, alvoYaw }
+  var temporizadorEnvioPosicao = 0;
+  var INTERVALO_ENVIO_POSICAO = 0.1; // 10x por segundo
+
+  function corDoJogadorRemoto(id) {
+    var cores = [0xef4444, 0x3b82f6, 0x22c55e, 0xf59e0b, 0xa855f7, 0xec4899, 0x06b6d4, 0xf472b6];
+    var soma = 0;
+    for (var i = 0; i < id.length; i++) soma += id.charCodeAt(i);
+    return cores[soma % cores.length];
+  }
+
+  function criarAvatarRemoto(id) {
+    var grupo = new THREE.Group();
+    var corHex = corDoJogadorRemoto(id);
+    var corpo = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 0.3), new THREE.MeshLambertMaterial({ color: corHex }));
+    corpo.position.y = 0.55;
+    var cabeca = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 12), new THREE.MeshLambertMaterial({ color: 0xf2c9a0 }));
+    cabeca.position.y = 1.25;
+    grupo.add(corpo);
+    grupo.add(cabeca);
+    cena.add(grupo);
+    return grupo;
+  }
+
+  function atualizarContadorJogadores() {
+    var el = document.getElementById("jogadoresOnline");
+    if (modoJogo !== "rede") { el.classList.add("escondido"); return; }
+    var total = Object.keys(jogadoresRemotos).length + 1;
+    el.textContent = "👥 " + total + " jogador" + (total === 1 ? "" : "es") + " na sala";
+    el.classList.remove("escondido");
+  }
+
+  function aoReceberPosicaoRemota(msg) {
+    var id = msg.remetente;
+    if (!id) return;
+    if (!jogadoresRemotos[id]) {
+      var grupo = criarAvatarRemoto(id);
+      grupo.position.set(msg.x, msg.y, msg.z);
+      grupo.rotation.y = msg.yaw;
+      jogadoresRemotos[id] = { grupo: grupo, alvoX: msg.x, alvoY: msg.y, alvoZ: msg.z, alvoYaw: msg.yaw };
+      atualizarContadorJogadores();
+    }
+    var j = jogadoresRemotos[id];
+    j.alvoX = msg.x; j.alvoY = msg.y; j.alvoZ = msg.z; j.alvoYaw = msg.yaw;
+  }
+
+  function removerJogadorRemoto(id) {
+    if (jogadoresRemotos[id]) {
+      cena.remove(jogadoresRemotos[id].grupo);
+      delete jogadoresRemotos[id];
+      atualizarContadorJogadores();
+    }
+  }
+
+  function atualizarAvataresRemotos(dt) {
+    var fator = Math.min(1, dt * 10);
+    Object.keys(jogadoresRemotos).forEach(function (id) {
+      var j = jogadoresRemotos[id];
+      j.grupo.position.x += (j.alvoX - j.grupo.position.x) * fator;
+      j.grupo.position.y += (j.alvoY - j.grupo.position.y) * fator;
+      j.grupo.position.z += (j.alvoZ - j.grupo.position.z) * fator;
+      j.grupo.rotation.y += (j.alvoYaw - j.grupo.rotation.y) * fator;
+    });
+  }
+
+  function atualizarRede(dt) {
+    if (modoJogo !== "rede" || !rede) return;
+    temporizadorEnvioPosicao -= dt;
+    if (temporizadorEnvioPosicao <= 0) {
+      rede.enviar({ tipo: "posicao", x: jogador.x, y: jogador.y, z: jogador.z, yaw: jogador.yaw });
+      temporizadorEnvioPosicao = INTERVALO_ENVIO_POSICAO;
+    }
+    atualizarAvataresRemotos(dt);
+  }
+
+  function entrarNoJogoRede() {
+    if (jogoComecado) return; // evita entrar duas vezes (ex: resposta de mundo chegando atrasada)
+    document.getElementById("telaInicial").classList.add("escondido");
+    document.getElementById("hotbar").classList.remove("escondido");
+    document.getElementById("ajuda").classList.remove("escondido");
+    document.getElementById("relogio").classList.remove("escondido");
+    jogoComecado = true;
+    iniciarAudio();
+    reconstruirMalhas();
+    posicionarJogadorNoSpawn();
+    sincronizarCamera();
+    atualizarContadorJogadores();
+    canvas3d.requestPointerLock();
+  }
+
+  function conectarRedeMundo(codigo) {
+    modoJogo = "rede";
+    var statusEl = document.getElementById("statusRedeMundo");
+    statusEl.textContent = "Conectando...";
+
+    rede = criarConexaoRede({
+      sala: "mundo-blocos-" + codigo,
+      aoConectar: function (info) {
+        if (info.quantidadeNaSala === 1) {
+          semente = { ox: Math.random() * 1000, oz: Math.random() * 1000 };
+          edicoes = {};
+          gerarTerrenoBase();
+          aplicarEdicoes();
+          criarNpcsDaVila(vilaInfo.pontosDeMorada);
+          entrarNoJogoRede();
+        } else {
+          statusEl.textContent = "Conectado! Sincronizando o mundo com os colegas...";
+          rede.enviar({ tipo: "pedir-mundo" });
+          setTimeout(function () {
+            if (!jogoComecado) {
+              semente = { ox: Math.random() * 1000, oz: Math.random() * 1000 };
+              edicoes = {};
+              gerarTerrenoBase();
+              aplicarEdicoes();
+              criarNpcsDaVila(vilaInfo.pontosDeMorada);
+              entrarNoJogoRede();
+            }
+          }, 3000);
+        }
+      },
+      aoEntrarOutroJogador: function () {
+        atualizarContadorJogadores();
+      },
+      aoReceberMensagem: function (msg) {
+        if (msg.tipo === "posicao") {
+          aoReceberPosicaoRemota(msg);
+        } else if (msg.tipo === "bloco") {
+          registrarEdicao(msg.x, msg.y, msg.z, msg.tipoBloco, true);
+          reconstruirMalhas();
+        } else if (msg.tipo === "pedir-mundo") {
+          rede.enviar({ tipo: "estado-mundo", semente: semente, edicoes: edicoes });
+        } else if (msg.tipo === "estado-mundo" && !jogoComecado) {
+          semente = msg.semente;
+          edicoes = msg.edicoes;
+          gerarTerrenoBase();
+          aplicarEdicoes();
+          criarNpcsDaVila(vilaInfo.pontosDeMorada);
+          entrarNoJogoRede();
+        }
+      },
+      aoSairJogador: function (info) {
+        removerJogadorRemoto(info.id);
+      },
+      aoDesconectar: function () {
+        statusEl.textContent = "Conexão com o servidor perdida.";
+        document.getElementById("avisoRedeCaida").classList.remove("escondido");
+      }
+    });
+  }
+
+  // ==================== NPCs da vila ====================
+  // Sistema 100% cliente-local (sem mensagens de rede novas): o nascimento de cada NPC é
+  // determinístico a partir da "semente" (via vilaInfo.pontosDeMorada, igual às árvores), então
+  // todo jogador de uma sala "rede" vê os mesmos moradores nascendo nos mesmos lugares. O
+  // passeio aleatório depois pode divergir levemente entre clientes — aceitável, são só
+  // decoração/ambientação, sem colisão com o jogador nem efeito na jogabilidade.
+
+  var RAIO_PASSEIO_NPC = 5;            // até quantos blocos um NPC se afasta do seu ponto de referência
+  var DISTANCIA_FRENTE_CASA_NPC = 2.5; // quanto o "centro de passeio" fica à frente da porta
+  var VELOCIDADE_NPC = 1.3;            // blocos/seg — mais lento que o jogador andando (5.2)
+  var DISTANCIA_CHEGADA_NPC = 0.2;
+  var ALCANCE_FALA_NPC = 3;            // distância (blocos) pra olhar pro jogador / mostrar a bolha
+  var CORES_ROUPA_NPC = [0x4b7bec, 0x2ecc71, 0xe67e22, 0xc0392b, 0x8e44ad, 0x16a085, 0xf1c40f, 0x7f8c8d];
+  var CORES_CHAPEU_NPC = [0x6b4423, 0x8b5a2b, 0x4a4a4a, 0x2c3e50, 0xa0522d];
+  var CORES_PELE_NPC = [0xf2c9a0, 0xd9a066, 0x8d5524, 0xc68642];
+  var FRASES_NPC = [
+    "Que dia bonito para cuidar da horta!",
+    "Já reparou como o rio está calmo hoje?",
+    "Bem-vindo à nossa vila, viajante!",
+    "Andei plantando mais árvores essa semana.",
+    "Se precisar de um lugar pra descansar, é só bater na porta.",
+    "Essas montanhas ao longe nunca deixam de me impressionar.",
+    "Hoje o vento está soprando gostoso, não acha?",
+    "Cuidado por onde anda perto do penhasco!",
+    "Ouvi dizer que tem ouro escondido por essas pedras.",
+    "Nada como voltar pra casa depois de um longo passeio."
+  ];
+
+  var npcs = [];
+  var grupoNpcs = null;
+
+  function calcularYawParaAlvo(origX, origZ, alvoX, alvoZ) {
+    return Math.atan2(origX - alvoX, origZ - alvoZ);
+  }
+
+  function posicaoValidaParaNpc(x, z) {
+    if (x < 1 || x > TAMANHO_MUNDO - 2 || z < 1 || z > TAMANHO_MUNDO - 2) return false;
+    var y = alturaDoTerreno(x, z);
+    if (blocoEm(x, y, z) === TIPO.AGUA) return false; // não entra na água
+    if (ehSolido(blocoEm(x, y + 1, z)) || ehSolido(blocoEm(x, y + 2, z))) return false; // não atravessa parede
+    return true;
+  }
+
+  function sortearDestinoNpc(npc) {
+    for (var tentativa = 0; tentativa < 8; tentativa++) {
+      var ang = Math.random() * Math.PI * 2;
+      var dist = 1.5 + Math.random() * (RAIO_PASSEIO_NPC - 1.5);
+      var tx = npc.centroX + Math.cos(ang) * dist;
+      var tz = npc.centroZ + Math.sin(ang) * dist;
+      if (posicaoValidaParaNpc(tx, tz)) return { x: tx, z: tz };
+    }
+    return null;
+  }
+
+  function criarTexturaBolhaFala(texto) {
+    var canvas = document.createElement("canvas");
+    var ctx = canvas.getContext("2d");
+    var fonte = "26px sans-serif";
+    ctx.font = fonte;
+
+    var larguraMaxima = 340;
+    var palavras = texto.split(" ");
+    var linhas = [];
+    var linhaAtual = "";
+    for (var i = 0; i < palavras.length; i++) {
+      var tentativa = linhaAtual ? linhaAtual + " " + palavras[i] : palavras[i];
+      if (ctx.measureText(tentativa).width > larguraMaxima && linhaAtual) {
+        linhas.push(linhaAtual);
+        linhaAtual = palavras[i];
+      } else {
+        linhaAtual = tentativa;
+      }
+    }
+    if (linhaAtual) linhas.push(linhaAtual);
+
+    var larguraTexto = 0;
+    for (var li = 0; li < linhas.length; li++) larguraTexto = Math.max(larguraTexto, ctx.measureText(linhas[li]).width);
+
+    var w = Math.ceil(larguraTexto) + 48;
+    var h = 46 + linhas.length * 32 + 22; // corpo do balão + "rabinho"
+    canvas.width = w;
+    canvas.height = h;
+
+    // definir width/height reseta o contexto — refaz as configs de desenho
+    ctx.font = fonte;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    var raio = 16, alturaCorpo = h - 22;
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.strokeStyle = "rgba(60,40,20,0.9)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(raio, 4);
+    ctx.lineTo(w - raio, 4);
+    ctx.quadraticCurveTo(w - 4, 4, w - 4, raio + 4);
+    ctx.lineTo(w - 4, alturaCorpo - raio);
+    ctx.quadraticCurveTo(w - 4, alturaCorpo, w - raio - 4, alturaCorpo);
+    ctx.lineTo(w / 2 + 14, alturaCorpo);
+    ctx.lineTo(w / 2, h - 4);
+    ctx.lineTo(w / 2 - 14, alturaCorpo);
+    ctx.lineTo(raio + 4, alturaCorpo);
+    ctx.quadraticCurveTo(4, alturaCorpo, 4, alturaCorpo - raio);
+    ctx.lineTo(4, raio + 4);
+    ctx.quadraticCurveTo(4, 4, raio, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#2b2b2b";
+    var yInicial = alturaCorpo / 2 - (linhas.length - 1) * 15;
+    for (var l = 0; l < linhas.length; l++) ctx.fillText(linhas[l], w / 2, yInicial + l * 30);
+
+    var textura = new THREE.CanvasTexture(canvas);
+    textura.needsUpdate = true;
+    return { textura: textura, aspecto: w / h };
+  }
+
+  function mostrarFalaNpc(npc) {
+    var frase = FRASES_NPC[Math.floor(Math.random() * FRASES_NPC.length)];
+    var resultado = criarTexturaBolhaFala(frase);
+    if (npc.sprite.material.map) npc.sprite.material.map.dispose();
+    npc.sprite.material.map = resultado.textura;
+    npc.sprite.material.needsUpdate = true;
+    var alturaMundo = 0.9;
+    npc.sprite.scale.set(alturaMundo * resultado.aspecto, alturaMundo, 1);
+    npc.sprite.visible = true;
+  }
+
+  function esconderFalaNpc(npc) {
+    npc.sprite.visible = false;
+  }
+
+  function criarVisualNpc(npc) {
+    var grupo = new THREE.Group();
+
+    var corpo = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 1.0, 0.32),
+      new THREE.MeshLambertMaterial({ color: npc.corRoupa })
+    );
+    corpo.position.y = 0.5;
+
+    var cabeca = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 10, 10),
+      new THREE.MeshLambertMaterial({ color: npc.corPele })
+    );
+    cabeca.position.y = 1.15;
+
+    var chapeu = new THREE.Mesh(
+      new THREE.ConeGeometry(0.24, 0.28, 8),
+      new THREE.MeshLambertMaterial({ color: npc.corChapeu })
+    );
+    chapeu.position.y = 1.15 + 0.24 + 0.1;
+
+    var sprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
+    sprite.visible = false;
+    sprite.position.y = 1.85;
+
+    grupo.add(corpo);
+    grupo.add(cabeca);
+    grupo.add(chapeu);
+    grupo.add(sprite);
+    grupo.position.set(npc.x, npc.y, npc.z);
+
+    npc.grupo = grupo;
+    npc.sprite = sprite;
+  }
+
+  function criarNpc(x, y, z, centroX, centroZ, corRoupa, corChapeu, corPele) {
+    return {
+      x: x, y: y, z: z,
+      centroX: centroX, centroZ: centroZ,
+      estado: "parado",
+      tempoEstado: 1 + Math.random() * 2,
+      destino: null,
+      yawAlvo: 0,
+      pertoDoJogador: false,
+      corRoupa: corRoupa, corChapeu: corChapeu, corPele: corPele,
+      grupo: null, sprite: null
+    };
+  }
+
+  function removerNpcs() {
+    for (var i = 0; i < npcs.length; i++) {
+      var grupo = npcs[i].grupo;
+      if (!grupo) continue;
+      grupo.children.forEach(function (filho) {
+        if (filho.geometry) filho.geometry.dispose();
+        if (filho.material) {
+          if (filho.material.map) filho.material.map.dispose();
+          filho.material.dispose();
+        }
+      });
+    }
+    if (grupoNpcs) { cena.remove(grupoNpcs); grupoNpcs = null; }
+    npcs = [];
+  }
+
+  // Recria os NPCs a partir dos pontos de morada da vila (vilaInfo.pontosDeMorada). Só pode
+  // rodar DEPOIS que "cena" existe (ou seja, depois de inicializarThree()) — ver os pontos de
+  // chamada no fim do arquivo e dentro de conectarRedeMundo()/resetarMundo().
+  function criarNpcsDaVila(pontosDeMorada) {
+    removerNpcs();
+    if (!pontosDeMorada || pontosDeMorada.length === 0) return;
+
+    var rngNpcs = criarPRNG(Math.floor(semente.ox * 1237 + semente.oz * 941 + 71));
+    grupoNpcs = new THREE.Group();
+    cena.add(grupoNpcs);
+
+    for (var i = 0; i < pontosDeMorada.length; i++) {
+      var ponto = pontosDeMorada[i];
+      var quantidade = rngNpcs() < 0.35 ? 2 : 1;
+
+      var frenteX = -Math.sin(ponto.yaw);
+      var frenteZ = -Math.cos(ponto.yaw);
+      var centroX = ponto.x + frenteX * DISTANCIA_FRENTE_CASA_NPC;
+      var centroZ = ponto.z + frenteZ * DISTANCIA_FRENTE_CASA_NPC;
+
+      for (var n = 0; n < quantidade; n++) {
+        var ang = rngNpcs() * Math.PI * 2;
+        var dist = rngNpcs() * 1.5;
+        var px = centroX + Math.cos(ang) * dist;
+        var pz = centroZ + Math.sin(ang) * dist;
+        if (!posicaoValidaParaNpc(px, pz)) { px = centroX; pz = centroZ; }
+        var py = alturaDoTerreno(px, pz) + 1;
+
+        var npc = criarNpc(px, py, pz, centroX, centroZ,
+          CORES_ROUPA_NPC[Math.floor(rngNpcs() * CORES_ROUPA_NPC.length)],
+          CORES_CHAPEU_NPC[Math.floor(rngNpcs() * CORES_CHAPEU_NPC.length)],
+          CORES_PELE_NPC[Math.floor(rngNpcs() * CORES_PELE_NPC.length)]
+        );
+        criarVisualNpc(npc);
+        grupoNpcs.add(npc.grupo);
+        npcs.push(npc);
+      }
+    }
+  }
+
+  function atualizarNpcs(dt) {
+    if (npcs.length === 0) return;
+
+    for (var i = 0; i < npcs.length; i++) {
+      var npc = npcs[i];
+
+      if (npc.estado === "parado") {
+        npc.tempoEstado -= dt;
+        if (npc.tempoEstado <= 0) {
+          var destino = sortearDestinoNpc(npc);
+          if (destino) { npc.destino = destino; npc.estado = "andando"; }
+          else npc.tempoEstado = 1 + Math.random() * 2;
+        }
+      } else {
+        var dx = npc.destino.x - npc.x, dz = npc.destino.z - npc.z;
+        var dist = Math.hypot(dx, dz);
+        if (dist < DISTANCIA_CHEGADA_NPC) {
+          npc.estado = "parado";
+          npc.tempoEstado = 2 + Math.random() * 4;
+          npc.destino = null;
+        } else {
+          var passo = Math.min(dist, VELOCIDADE_NPC * dt);
+          var novoX = npc.x + (dx / dist) * passo;
+          var novoZ = npc.z + (dz / dist) * passo;
+          if (posicaoValidaParaNpc(novoX, novoZ)) {
+            npc.x = novoX; npc.z = novoZ;
+            npc.yawAlvo = calcularYawParaAlvo(0, 0, dx, dz);
+          } else {
+            npc.estado = "parado";
+            npc.tempoEstado = 1 + Math.random() * 2;
+            npc.destino = null;
+          }
+        }
+      }
+
+      npc.y += (alturaDoTerreno(npc.x, npc.z) + 1 - npc.y) * Math.min(1, dt * 6);
+
+      var distJogador = Math.hypot(jogador.x - npc.x, jogador.z - npc.z);
+      var pertoAgora = distJogador < ALCANCE_FALA_NPC;
+      if (pertoAgora) {
+        npc.yawAlvo = calcularYawParaAlvo(npc.x, npc.z, jogador.x, jogador.z);
+        if (!npc.pertoDoJogador) mostrarFalaNpc(npc);
+      } else if (npc.pertoDoJogador) {
+        esconderFalaNpc(npc);
+      }
+      npc.pertoDoJogador = pertoAgora;
+
+      npc.grupo.position.set(npc.x, npc.y, npc.z);
+      npc.grupo.rotation.y += (npc.yawAlvo - npc.grupo.rotation.y) * Math.min(1, dt * 8);
+    }
+  }
+
+  // ==================== Texturas procedurais (originais, geradas por código) ====================
+
+  function novoCanvas(tamanho) {
+    var c = document.createElement("canvas");
+    c.width = tamanho; c.height = tamanho;
+    return c;
+  }
+
+  function ruidoPixels(ctx, tamanho, corBase, variacao, quantidade) {
+    ctx.fillStyle = corBase;
+    ctx.fillRect(0, 0, tamanho, tamanho);
+    for (var i = 0; i < quantidade; i++) {
+      var x = Math.floor(Math.random() * tamanho), y = Math.floor(Math.random() * tamanho);
+      var tom = variacao[Math.floor(Math.random() * variacao.length)];
+      ctx.fillStyle = tom;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+
+  function texturaGramaTopo() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#5ea83c", ["#4f9330", "#6fb84a", "#458229", "#79c454"], 90);
+    return c;
+  }
+  function texturaTerra() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#8a5a34", ["#7a4c2a", "#96643d", "#6d4324", "#a1734a"], 90);
+    return c;
+  }
+  function texturaGramaLado() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#8a5a34", ["#7a4c2a", "#96643d", "#6d4324"], 60);
+    ctx.fillStyle = "#5ea83c";
+    for (var x = 0; x < 16; x++) {
+      var alturaFaixa = 4 + Math.floor(Math.random() * 2);
+      ctx.fillRect(x, 0, 1, alturaFaixa);
+    }
+    ruidoPixels2(ctx, 16, 5, ["#4f9330", "#6fb84a"]);
+    return c;
+  }
+  function ruidoPixels2(ctx, tamanho, faixa, cores) {
+    for (var i = 0; i < 30; i++) {
+      var x = Math.floor(Math.random() * tamanho), y = Math.floor(Math.random() * faixa);
+      ctx.fillStyle = cores[Math.floor(Math.random() * cores.length)];
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  function texturaPedra() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#8b8f97", ["#797d85", "#9aa0a8", "#6b6f76", "#a7adb5"], 100);
+    return c;
+  }
+  function texturaAreia() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#ddc98a", ["#cfb977", "#e6d69c", "#c2ab6b"], 80);
+    return c;
+  }
+  function texturaTroncoLado() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.fillStyle = "#6b4a2c"; ctx.fillRect(0, 0, 16, 16);
+    ctx.fillStyle = "#5a3d24";
+    for (var x = 0; x < 16; x += 3) ctx.fillRect(x, 0, 1, 16);
+    ruidoPixels2big(ctx);
+    return c;
+  }
+  function ruidoPixels2big(ctx) {
+    for (var i = 0; i < 25; i++) {
+      var x = Math.floor(Math.random() * 16), y = Math.floor(Math.random() * 16);
+      ctx.fillStyle = Math.random() < 0.5 ? "#7c5836" : "#4d3320";
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  function texturaTroncoTopo() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.fillStyle = "#9c7a4d"; ctx.fillRect(0, 0, 16, 16);
+    ctx.strokeStyle = "#7c5836";
+    for (var r = 1; r < 8; r += 2) {
+      ctx.beginPath(); ctx.arc(8, 8, r, 0, Math.PI * 2); ctx.stroke();
+    }
+    return c;
+  }
+  function texturaFolhas() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#3f8f2e", ["#357824", "#4aa53a", "#2e661f"], 60);
+    for (var i = 0; i < 8; i++) {
+      var x = Math.floor(Math.random() * 14), y = Math.floor(Math.random() * 14);
+      ctx.fillStyle = "#2e661f";
+      ctx.fillRect(x, y, 2, 2);
+    }
+    return c;
+  }
+  function texturaTijolo() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.fillStyle = "#9c3b2e"; ctx.fillRect(0, 0, 16, 16);
+    ctx.strokeStyle = "#5c211a"; ctx.lineWidth = 1;
+    for (var linha = 0; linha < 4; linha++) {
+      var y = linha * 4;
+      ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(16, y + 0.5); ctx.stroke();
+      var deslocamento = (linha % 2 === 0) ? 0 : 4;
+      for (var x = -deslocamento; x < 16; x += 8) {
+        ctx.beginPath(); ctx.moveTo(x + 0.5, y); ctx.lineTo(x + 0.5, y + 4); ctx.stroke();
+      }
+    }
+    return c;
+  }
+  function texturaVidro() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.fillStyle = "#bfe3f0"; ctx.fillRect(0, 0, 16, 16);
+    ctx.strokeStyle = "#8fc4d6"; ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, 15, 15);
+    ctx.beginPath(); ctx.moveTo(2, 2); ctx.lineTo(6, 2); ctx.stroke();
+    return c;
+  }
+  function texturaAgua() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#2f7fd1", ["#3d8fe0", "#245f9e", "#4a9de8"], 50);
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    for (var y = 3; y < 16; y += 5) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(16, y - 1); ctx.stroke();
+    }
+    return c;
+  }
+  function texturaNeve() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#f3f7fb", ["#e4ecf5", "#ffffff", "#d7e2ef"], 70);
+    return c;
+  }
+  function texturaOuro() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, "#8b8f97", ["#797d85", "#9aa0a8", "#6b6f76"], 60);
+    for (var i = 0; i < 10; i++) {
+      var x = Math.floor(Math.random() * 13), y = Math.floor(Math.random() * 13);
+      ctx.fillStyle = Math.random() < 0.5 ? "#f5c518" : "#d4a017";
+      ctx.fillRect(x, y, 2, 2);
+    }
+    return c;
+  }
+  function texturaLa(corBase, variacao) {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ruidoPixels(ctx, 16, corBase, variacao, 90);
+    return c;
+  }
+  function texturaLaVermelha() { return texturaLa("#c23b3b", ["#a92f2f", "#d65050", "#8f2323"]); }
+  function texturaLaAzul() { return texturaLa("#3b5fc2", ["#2f4aa9", "#5074d6", "#23388f"]); }
+
+  // ícones de ferramenta (desenhos simples em vetor, só pra interface — não são texturas de cubo)
+  function texturaPicareta() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.strokeStyle = "#8a5a34"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(8, 6); ctx.lineTo(8, 15); ctx.stroke();
+    ctx.strokeStyle = "#9aa0a8"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(2, 3); ctx.lineTo(8, 7); ctx.lineTo(14, 3); ctx.stroke();
+    return c;
+  }
+  function texturaMachado() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.strokeStyle = "#8a5a34"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(6, 3); ctx.lineTo(11, 15); ctx.stroke();
+    ctx.fillStyle = "#9aa0a8";
+    ctx.beginPath(); ctx.moveTo(6, 3); ctx.lineTo(13, 2); ctx.lineTo(14, 6); ctx.lineTo(7, 8); ctx.closePath(); ctx.fill();
+    return c;
+  }
+  function texturaPa() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.strokeStyle = "#8a5a34"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(8, 1); ctx.lineTo(8, 11); ctx.stroke();
+    ctx.fillStyle = "#9aa0a8";
+    ctx.beginPath(); ctx.moveTo(5, 10); ctx.lineTo(11, 10); ctx.lineTo(10, 15); ctx.lineTo(6, 15); ctx.closePath(); ctx.fill();
+    return c;
+  }
+  function texturaEspada() {
+    var c = novoCanvas(16); var ctx = c.getContext("2d");
+    ctx.fillStyle = "#c9d3dc";
+    ctx.beginPath(); ctx.moveTo(8, 1); ctx.lineTo(10, 3); ctx.lineTo(10, 10); ctx.lineTo(6, 10); ctx.lineTo(6, 3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#8b8f97"; ctx.fillRect(4, 10, 8, 2);
+    ctx.fillStyle = "#5a3d24"; ctx.fillRect(7, 12, 2, 4);
+    return c;
+  }
+
+  function paraTextura(canvas) {
+    var tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  // materiais por tipo: cada entrada é ou 1 material (todas as faces iguais) ou array de 6 (px,nx,py,ny,pz,nz)
+  var MATERIAIS_POR_TIPO = {};
+
+  function construirMateriais() {
+    var matGramaTopo = new THREE.MeshLambertMaterial({ map: paraTextura(texturaGramaTopo()) });
+    var matGramaLado = new THREE.MeshLambertMaterial({ map: paraTextura(texturaGramaLado()) });
+    var matTerra = new THREE.MeshLambertMaterial({ map: paraTextura(texturaTerra()) });
+    MATERIAIS_POR_TIPO[TIPO.GRAMA] = [matGramaLado, matGramaLado, matGramaTopo, matTerra, matGramaLado, matGramaLado];
+    MATERIAIS_POR_TIPO[TIPO.TERRA] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaTerra()) });
+    MATERIAIS_POR_TIPO[TIPO.PEDRA] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaPedra()) });
+    MATERIAIS_POR_TIPO[TIPO.AREIA] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaAreia()) });
+
+    var matTroncoLado = new THREE.MeshLambertMaterial({ map: paraTextura(texturaTroncoLado()) });
+    var matTroncoTopo = new THREE.MeshLambertMaterial({ map: paraTextura(texturaTroncoTopo()) });
+    MATERIAIS_POR_TIPO[TIPO.TRONCO] = [matTroncoLado, matTroncoLado, matTroncoTopo, matTroncoTopo, matTroncoLado, matTroncoLado];
+
+    MATERIAIS_POR_TIPO[TIPO.FOLHAS] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaFolhas()) });
+    MATERIAIS_POR_TIPO[TIPO.TIJOLO] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaTijolo()) });
+    MATERIAIS_POR_TIPO[TIPO.VIDRO] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaVidro()), transparent: true, opacity: 0.55 });
+    MATERIAIS_POR_TIPO[TIPO.AGUA] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaAgua()), transparent: true, opacity: 0.7 });
+    MATERIAIS_POR_TIPO[TIPO.NEVE] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaNeve()) });
+    MATERIAIS_POR_TIPO[TIPO.OURO] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaOuro()) });
+    MATERIAIS_POR_TIPO[TIPO.LA_VERMELHA] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaLaVermelha()) });
+    MATERIAIS_POR_TIPO[TIPO.LA_AZUL] = new THREE.MeshLambertMaterial({ map: paraTextura(texturaLaAzul()) });
+  }
+
+  // ==================== Three.js: cena, câmera, luz ====================
+
+  var canvas3d = document.getElementById("canvas3d");
+  var cena, camera, renderizador, luzDirecional, luzAmbiente;
+  var geometriaCubo = new THREE.BoxGeometry(1, 1, 1);
+  var malhasPorTipo = {}; // tipo -> THREE.InstancedMesh
+  var coordenadasPorTipo = {}; // tipo -> array paralelo de {x,y,z} na mesma ordem das instâncias
+
+  function inicializarThree() {
+    cena = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 200);
+    camera.rotation.order = "YXZ";
+
+    renderizador = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true });
+    renderizador.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderizador.setSize(window.innerWidth, window.innerHeight);
+
+    luzAmbiente = new THREE.AmbientLight(0xffffff, 0.55);
+    cena.add(luzAmbiente);
+    luzDirecional = new THREE.DirectionalLight(0xffffff, 0.8);
+    cena.add(luzDirecional);
+
+    construirMateriais();
+
+    LISTA_HOTBAR.concat([TIPO.GRAMA]).forEach(function (tipo) {
+      if (malhasPorTipo[tipo]) return;
+      var malha = new THREE.InstancedMesh(geometriaCubo, MATERIAIS_POR_TIPO[tipo], MAX_INSTANCIAS_POR_TIPO);
+      malha.count = 0;
+      malha.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      cena.add(malha);
+      malhasPorTipo[tipo] = malha;
+      coordenadasPorTipo[tipo] = [];
+    });
+
+    window.addEventListener("resize", function () {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderizador.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  var _matrizTemp = new THREE.Matrix4();
+
+  function blocoExposto(x, y, z) {
+    return ehTransparente(blocoEm(x + 1, y, z)) || ehTransparente(blocoEm(x - 1, y, z)) ||
+      ehTransparente(blocoEm(x, y + 1, z)) || ehTransparente(blocoEm(x, y - 1, z)) ||
+      ehTransparente(blocoEm(x, y, z + 1)) || ehTransparente(blocoEm(x, y, z - 1));
+  }
+
+  function reconstruirMalhas() {
+    var contagens = {};
+    Object.keys(malhasPorTipo).forEach(function (t) { contagens[t] = 0; coordenadasPorTipo[t].length = 0; });
+
+    for (var x = 0; x < TAMANHO_MUNDO; x++) {
+      for (var z = 0; z < TAMANHO_MUNDO; z++) {
+        for (var y = 0; y < ALTURA_MUNDO; y++) {
+          var tipo = blocoEm(x, y, z);
+          if (tipo === TIPO.AR) continue;
+          if (!blocoExposto(x, y, z)) continue;
+
+          var malha = malhasPorTipo[tipo];
+          if (!malha) continue;
+          var i = contagens[tipo];
+          if (i >= MAX_INSTANCIAS_POR_TIPO) continue;
+
+          _matrizTemp.setPosition(x + 0.5, y + 0.5, z + 0.5);
+          malha.setMatrixAt(i, _matrizTemp);
+          coordenadasPorTipo[tipo][i] = { x: x, y: y, z: z };
+          contagens[tipo] = i + 1;
+        }
+      }
+    }
+
+    Object.keys(malhasPorTipo).forEach(function (t) {
+      var malha = malhasPorTipo[t];
+      malha.count = contagens[t];
+      malha.instanceMatrix.needsUpdate = true;
+    });
+  }
+
+  // ==================== Jogador ====================
+
+  var jogador = { x: TAMANHO_MUNDO / 2, y: 20, z: TAMANHO_MUNDO / 2, velY: 0, noChao: false, yaw: 0, pitch: -0.1 };
+  var teclas = {};
+  var blocoSelecionado = TIPO.GRAMA;
+  var voando = false;
+  var ultimoToqueEspaco = -999;
+  var mouseEsquerdoPressionado = false;
+  var alvoQuebraAtual = null;
+  var progressoQuebra = 0;
+  var travado = false;
+  var jogoComecado = false;
+  var pausado = true;
+
+  function posicionarJogadorNoSpawn() {
+    var cx = Math.floor(TAMANHO_MUNDO / 2), cz = Math.floor(TAMANHO_MUNDO / 2);
+    jogador.x = cx + 0.5; jogador.z = cz + 0.5;
+    jogador.y = alturaDoTerreno(cx, cz) + 1.05;
+    jogador.velY = 0;
+  }
+
+  function colideNoPonto(x, y, z) {
+    return ehSolido(blocoEm(x, y, z)); // água não bloqueia (dá pra nadar através dela)
+  }
+
+  function pontoEhAgua(x, y, z) {
+    return blocoEm(x, y, z) === TIPO.AGUA;
+  }
+
+  function estaNaAgua() {
+    // Considera "na água" (pra física) se QUALQUER parte do corpo — pés, meio ou cabeça —
+    // ainda tocar água. Antes só o ponto do meio era testado: no instante exato em que ele
+    // cruzava a superfície ao subir pra sair de um lago, a gravidade ia de GRAVIDADE_AGUA pra
+    // GRAVIDADE (cheia) de repente e jogava o jogador de volta pra dentro d'água antes dele
+    // terminar de subir na margem.
+    var pes = jogador.y + 0.1;
+    var meio = jogador.y + ALTURA_JOGADOR * 0.5;
+    var cabeca = jogador.y + ALTURA_JOGADOR - 0.1;
+    return pontoEhAgua(jogador.x, pes, jogador.z) ||
+      pontoEhAgua(jogador.x, meio, jogador.z) ||
+      pontoEhAgua(jogador.x, cabeca, jogador.z);
+  }
+
+  function colideCorpo(x, y, z) {
+    var r = RAIO_JOGADOR;
+    var cantosXZ = [[-r, -r], [r, -r], [-r, r], [r, r]];
+    var alturasY = [y + 0.05, y + ALTURA_JOGADOR - 0.05];
+    for (var i = 0; i < cantosXZ.length; i++) {
+      for (var j = 0; j < alturasY.length; j++) {
+        if (colideNoPonto(x + cantosXZ[i][0], alturasY[j], z + cantosXZ[i][1])) return true;
+      }
+    }
+    return false;
+  }
+
+  // Tenta encaixar o corpo do jogador em (x, yAtual, z). Se já estiver livre, devolve o
+  // próprio yAtual. Se estiver bloqueado, procura o menor deslocamento pra cima (até
+  // ALTURA_MAX_DEGRAU) que libera o caminho — como se o jogador subisse sozinho um
+  // degrau/margem de até ~1 bloco. Se nem subindo o máximo permitido o caminho libera, devolve
+  // null (bloqueio de verdade: parede alta, teto baixo etc). Funciona em terra firme e na
+  // água — é isso que impede o jogador de ficar preso contra a margem de um lago.
+  function calcularYComAutoStep(x, z, yAtual) {
+    if (!colideCorpo(x, yAtual, z)) return yAtual;
+    for (var subida = INCREMENTO_DEGRAU; subida <= ALTURA_MAX_DEGRAU + 0.001; subida += INCREMENTO_DEGRAU) {
+      var yTeste = yAtual + subida;
+      if (!colideCorpo(x, yTeste, z)) return yTeste;
+    }
+    return null;
+  }
+
+  function atualizarJogador(dt) {
+    var direcaoFrente = { x: -Math.sin(jogador.yaw), z: -Math.cos(jogador.yaw) };
+    var direcaoDireita = { x: Math.cos(jogador.yaw), z: -Math.sin(jogador.yaw) };
+
+    var moveX = 0, moveZ = 0;
+    if (teclas["w"]) { moveX += direcaoFrente.x; moveZ += direcaoFrente.z; }
+    if (teclas["s"]) { moveX -= direcaoFrente.x; moveZ -= direcaoFrente.z; }
+    if (teclas["a"]) { moveX -= direcaoDireita.x; moveZ -= direcaoDireita.z; }
+    if (teclas["d"]) { moveX += direcaoDireita.x; moveZ += direcaoDireita.z; }
+
+    var comprimento = Math.hypot(moveX, moveZ);
+    if (comprimento > 0.001) { moveX /= comprimento; moveZ /= comprimento; }
+    var estaAndando = comprimento > 0.001;
+
+    var naAgua = estaNaAgua();
+    var velocidadeAtual = VELOCIDADE_ANDAR;
+    if (voando) velocidadeAtual *= 1.6;
+    else if (naAgua) velocidadeAtual *= 0.7;
+    else if (teclas["shift"]) velocidadeAtual *= 1.7;
+
+    // Movimento horizontal com auto-degrau: se o caminho direto estiver bloqueado por um
+    // obstáculo de até ~1 bloco (margem de lago, degrau de terreno etc.), o jogador sobe
+    // automaticamente em vez de ficar travado contra ele.
+    var novoX = jogador.x + moveX * velocidadeAtual * dt;
+    if (novoX !== jogador.x) {
+      var yAposX = calcularYComAutoStep(novoX, jogador.z, jogador.y);
+      if (yAposX !== null) { jogador.x = novoX; jogador.y = yAposX; }
+    }
+
+    var novoZ = jogador.z + moveZ * velocidadeAtual * dt;
+    if (novoZ !== jogador.z) {
+      var yAposZ = calcularYComAutoStep(jogador.x, novoZ, jogador.y);
+      if (yAposZ !== null) { jogador.z = novoZ; jogador.y = yAposZ; }
+    }
+
+    if (voando) {
+      jogador.velY = 0;
+      jogador.noChao = false;
+      var direcaoVertical = 0;
+      if (teclas[" "]) direcaoVertical = 1;
+      else if (teclas["shift"]) direcaoVertical = -1;
+      var novoYVoo = jogador.y + direcaoVertical * VELOCIDADE_VOO * dt;
+      if (!colideCorpo(jogador.x, novoYVoo, jogador.z)) jogador.y = novoYVoo;
+    } else {
+      var gravidadeAtual = naAgua ? GRAVIDADE_AGUA : GRAVIDADE;
+      jogador.velY -= gravidadeAtual * dt;
+      if (naAgua) {
+        // Flutuação passiva: mesmo sem apertar nada, a água empurra o jogador de volta pra
+        // superfície aos poucos — isso garante que ele nunca fique preso parado no fundo de um
+        // lago fundo. Segurar Espaço ainda nada pra cima mais rápido; segurar Shift mergulha de
+        // propósito (útil pra minerar no fundo), contra a flutuação.
+        jogador.velY += EMPUXO_PASSIVO_AGUA * dt;
+        if (teclas[" "]) jogador.velY += EMPUXO_NADANDO * dt;
+        if (teclas["shift"]) jogador.velY -= EMPUXO_NADANDO * dt;
+        if (jogador.velY > VELOCIDADE_MAX_SUBIDA_NADANDO) jogador.velY = VELOCIDADE_MAX_SUBIDA_NADANDO;
+        if (jogador.velY < -VELOCIDADE_MAX_AFUNDAR) jogador.velY = -VELOCIDADE_MAX_AFUNDAR;
+      }
+
+      var velYAntesDeColidir = jogador.velY;
+      var jaEstavaNoChao = jogador.noChao;
+      var novoY = jogador.y + jogador.velY * dt;
+
+      if (jogador.velY < 0 && colideCorpo(jogador.x, novoY, jogador.z)) {
+        // caindo (ou afundando) e bateu no chão: fica exatamente onde estava, só zera a queda
+        jogador.noChao = true;
+        jogador.velY = 0;
+        if (!jaEstavaNoChao && velYAntesDeColidir < -6 && !naAgua) tocarSomAterrissar();
+      } else if (jogador.velY > 0 && colideCorpo(jogador.x, novoY, jogador.z)) {
+        // subindo e bateu a cabeça no teto: idem, mantém a posição válida anterior
+        jogador.velY = 0;
+      } else {
+        jogador.y = novoY;
+        jogador.noChao = false;
+      }
+
+      if (jogador.y < 0) { jogador.y = 0; jogador.velY = 0; jogador.noChao = true; }
+
+      if (teclas[" "] && jogador.noChao && !naAgua) {
+        jogador.velY = VELOCIDADE_PULO;
+        jogador.noChao = false;
+        tocarSomPular();
+      }
+    }
+
+    atualizarSons(dt, estaAndando, naAgua);
+  }
+
+  function sincronizarCamera() {
+    camera.position.set(jogador.x, jogador.y + ALTURA_OLHOS, jogador.z);
+    camera.rotation.set(jogador.pitch, jogador.yaw, 0);
+  }
+
+  // ==================== Interação (quebrar / colocar) ====================
+
+  var raycaster = new THREE.Raycaster();
+  raycaster.far = ALCANCE_INTERACAO;
+
+  function malhasParaRaycast() {
+    return Object.keys(malhasPorTipo)
+      .filter(function (t) { return Number(t) !== TIPO.AGUA; }) // água não é alvo de quebrar/colocar
+      .map(function (t) { return malhasPorTipo[t]; });
+  }
+
+  function calcularMira() {
+    raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
+    var alvos = malhasParaRaycast();
+    var hits = raycaster.intersectObjects(alvos, false);
+    if (hits.length === 0) return null;
+    var hit = hits[0];
+    var tipo = null;
+    Object.keys(malhasPorTipo).forEach(function (t) { if (malhasPorTipo[t] === hit.object) tipo = Number(t); });
+    var coordenada = coordenadasPorTipo[tipo][hit.instanceId];
+    return { tipo: tipo, coordenada: coordenada, normal: hit.face.normal, ponto: hit.point };
+  }
+
+  function quebrarBloco() {
+    var mira = calcularMira();
+    if (!mira) return;
+    registrarEdicao(mira.coordenada.x, mira.coordenada.y, mira.coordenada.z, TIPO.AR);
+    reconstruirMalhas();
+    tocarSomQuebrar();
+  }
+
+  function atualizarBarraProgresso(fracao) {
+    var container = document.getElementById("barraProgressoContainer");
+    var preenchimento = document.getElementById("barraProgressoPreenchimento");
+    container.classList.toggle("escondido", fracao <= 0);
+    preenchimento.style.width = (fracao * 100) + "%";
+  }
+
+  function pararDeQuebrar() {
+    mouseEsquerdoPressionado = false;
+    alvoQuebraAtual = null;
+    progressoQuebra = 0;
+    atualizarBarraProgresso(0);
+  }
+
+  function atualizarQuebra(dt) {
+    if (!mouseEsquerdoPressionado) return;
+
+    var mira = calcularMira();
+    if (!mira) {
+      alvoQuebraAtual = null;
+      progressoQuebra = 0;
+      atualizarBarraProgresso(0);
+      return;
+    }
+
+    var mudouAlvo = !alvoQuebraAtual ||
+      alvoQuebraAtual.x !== mira.coordenada.x || alvoQuebraAtual.y !== mira.coordenada.y || alvoQuebraAtual.z !== mira.coordenada.z;
+    if (mudouAlvo) { alvoQuebraAtual = mira.coordenada; progressoQuebra = 0; }
+
+    progressoQuebra += dt / tempoDeQuebra(mira.tipo);
+    atualizarBarraProgresso(Math.min(progressoQuebra, 1));
+
+    if (progressoQuebra >= 1) {
+      quebrarBloco();
+      alvoQuebraAtual = null;
+      progressoQuebra = 0;
+      atualizarBarraProgresso(0);
+    }
+  }
+
+  function colocarBloco() {
+    if (typeof blocoSelecionado !== "number") return; // ferramentas não são colocáveis como bloco
+    var mira = calcularMira();
+    if (!mira) return;
+    var nx = mira.coordenada.x + Math.round(mira.normal.x);
+    var ny = mira.coordenada.y + Math.round(mira.normal.y);
+    var nz = mira.coordenada.z + Math.round(mira.normal.z);
+    if (!dentroDoMundo(nx, ny, nz)) return;
+    if (blocoEm(nx, ny, nz) !== TIPO.AR) return;
+    if (corpoOcupaCelula(nx, ny, nz)) return; // não deixa colocar bloco dentro do próprio jogador
+    registrarEdicao(nx, ny, nz, blocoSelecionado);
+    reconstruirMalhas();
+    tocarSomColocar();
+  }
+
+  function corpoOcupaCelula(cx, cy, cz) {
+    var r = RAIO_JOGADOR;
+    var minX = jogador.x - r, maxX = jogador.x + r;
+    var minZ = jogador.z - r, maxZ = jogador.z + r;
+    var minY = jogador.y, maxY = jogador.y + ALTURA_JOGADOR;
+    return (maxX > cx && minX < cx + 1 && maxZ > cz && minZ < cz + 1 && maxY > cy && minY < cy + 1);
+  }
+
+  // ==================== Ciclo dia/noite ====================
+
+  var horaDoDia = 0.25; // 0 = meia-noite, 0.25 = manhã, 0.5 = meio-dia, 0.75 = tarde/pôr do sol
+  var relogioEl = document.getElementById("relogio");
+
+  function corCeu(h) {
+    var cores = [
+      { t: 0.0, cor: [0x0b, 0x11, 0x2a] },  // noite fechada
+      { t: 0.18, cor: [0x0b, 0x11, 0x2a] }, // continua noite até quase amanhecer
+      { t: 0.25, cor: [0xf6, 0x9a, 0x4e] }, // nascer do sol
+      { t: 0.32, cor: [0x8f, 0xd0, 0xf5] }, // dia
+      { t: 0.68, cor: [0x8f, 0xd0, 0xf5] }, // dia
+      { t: 0.75, cor: [0xf6, 0x6a, 0x4e] }, // pôr do sol
+      { t: 0.85, cor: [0x0b, 0x11, 0x2a] }, // noite fechada de novo
+      { t: 1.0, cor: [0x0b, 0x11, 0x2a] }
+    ];
+    for (var i = 0; i < cores.length - 1; i++) {
+      if (h >= cores[i].t && h <= cores[i + 1].t) {
+        var frac = (h - cores[i].t) / (cores[i + 1].t - cores[i].t || 1);
+        var a = cores[i].cor, b = cores[i + 1].cor;
+        var r = Math.round(a[0] + (b[0] - a[0]) * frac);
+        var g = Math.round(a[1] + (b[1] - a[1]) * frac);
+        var bl = Math.round(a[2] + (b[2] - a[2]) * frac);
+        return (r << 16) | (g << 8) | bl;
+      }
+    }
+    return 0x8fd0f5;
+  }
+
+  function atualizarCicloDia(dt) {
+    horaDoDia += dt / DURACAO_DIA;
+    if (horaDoDia >= 1) horaDoDia -= 1;
+
+    var cor = corCeu(horaDoDia);
+    cena.background = new THREE.Color(cor);
+    if (!cena.fog) cena.fog = new THREE.Fog(cor, 35, 110);
+    cena.fog.color.set(cor);
+
+    var claridade = 0.25 + 0.75 * Math.max(0, Math.sin(horaDoDia * Math.PI * 2 - Math.PI / 2) * 0.5 + 0.5);
+    luzDirecional.intensity = 0.3 + claridade * 0.9;
+    luzAmbiente.intensity = 0.25 + claridade * 0.5;
+
+    var anguloSol = horaDoDia * Math.PI * 2;
+    luzDirecional.position.set(Math.cos(anguloSol) * 40, Math.sin(anguloSol) * 40 + 5, 20);
+
+    var ehDia = horaDoDia > 0.22 && horaDoDia < 0.80;
+    relogioEl.textContent = ehDia ? "☀️ Dia" : "🌙 Noite";
+  }
+
+  // ==================== Sons (sintetizados por código, sem áudio de terceiros) ====================
+
+  var audioCtx = null;
+  var bufferRuido = null;
+
+  function iniciarAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      bufferRuido = criarBufferRuido(0.3);
+    } catch (e) { /* navegador sem suporte a áudio: sem problema, só fica sem som */ }
+  }
+
+  function criarBufferRuido(duracao) {
+    var tamanho = Math.floor(audioCtx.sampleRate * duracao);
+    var buffer = audioCtx.createBuffer(1, tamanho, audioCtx.sampleRate);
+    var dados = buffer.getChannelData(0);
+    for (var i = 0; i < tamanho; i++) dados[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / tamanho, 1.5);
+    return buffer;
+  }
+
+  function tocarRuido(volume, frequenciaFiltro, velocidade) {
+    if (!audioCtx) return;
+    var fonte = audioCtx.createBufferSource();
+    fonte.buffer = bufferRuido;
+    fonte.playbackRate.value = velocidade || 1;
+    var filtro = audioCtx.createBiquadFilter();
+    filtro.type = "lowpass";
+    filtro.frequency.value = frequenciaFiltro;
+    var ganho = audioCtx.createGain();
+    ganho.gain.value = volume;
+    fonte.connect(filtro); filtro.connect(ganho); ganho.connect(audioCtx.destination);
+    fonte.start();
+  }
+
+  function tocarBlip(freqInicial, freqFinal, duracao, volume) {
+    if (!audioCtx) return;
+    var osc = audioCtx.createOscillator();
+    var ganho = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freqInicial, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(freqFinal, 1), audioCtx.currentTime + duracao);
+    ganho.gain.setValueAtTime(volume, audioCtx.currentTime);
+    ganho.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duracao);
+    osc.connect(ganho); ganho.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duracao);
+  }
+
+  function tocarSomQuebrar() { tocarRuido(0.35, 900, 1.3); }
+  function tocarSomColocar() { tocarRuido(0.25, 500, 0.9); }
+  function tocarSomPular() { tocarBlip(300, 500, 0.15, 0.12); }
+  function tocarSomAterrissar() { tocarRuido(0.3, 300, 0.6); }
+  function tocarSomPasso() { tocarRuido(0.08, 250, 1.6); }
+  function tocarSomAlternarVoo(ligou) {
+    if (ligou) tocarBlip(400, 900, 0.2, 0.15);
+    else tocarBlip(700, 300, 0.2, 0.15);
+  }
+
+  var temporizadorPasso = 0;
+  function atualizarSons(dt, estaAndando, naAgua) {
+    if (estaAndando && jogador.noChao && !naAgua && !voando) {
+      temporizadorPasso -= dt;
+      if (temporizadorPasso <= 0) {
+        tocarSomPasso();
+        temporizadorPasso = teclas["shift"] ? 0.26 : 0.36;
+      }
+    } else {
+      temporizadorPasso = 0;
+    }
+  }
+
+  // ==================== Controles de entrada ====================
+
+  document.addEventListener("keydown", function (e) {
+    var tecla = e.key.toLowerCase();
+    teclas[tecla] = true;
+    if (tecla >= "1" && tecla <= "9") {
+      var indiceHotbar = Number(tecla) - 1;
+      if (LISTA_HOTBAR[indiceHotbar]) selecionarHotbar(indiceHotbar);
+    }
+    if (tecla === " " && !e.repeat && travado) {
+      var agora = performance.now();
+      if (agora - ultimoToqueEspaco < 300) {
+        voando = !voando;
+        jogador.velY = 0;
+        tocarSomAlternarVoo(voando);
+      }
+      ultimoToqueEspaco = agora;
+    }
+  });
+  document.addEventListener("keyup", function (e) { teclas[e.key.toLowerCase()] = false; });
+
+  canvas3d.addEventListener("click", function () {
+    if (!travado) canvas3d.requestPointerLock();
+  });
+  canvas3d.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  canvas3d.addEventListener("mousedown", function (e) {
+    if (!travado) return;
+    if (e.button === 0) mouseEsquerdoPressionado = true;
+    if (e.button === 2) colocarBloco();
+  });
+  canvas3d.addEventListener("mouseup", function (e) {
+    if (e.button === 0) pararDeQuebrar();
+  });
+
+  document.addEventListener("pointerlockchange", function () {
+    travado = document.pointerLockElement === canvas3d;
+    pausado = !travado;
+    document.getElementById("mira").classList.toggle("escondido", !travado);
+    if (!travado) pararDeQuebrar();
+    if (jogoComecado) {
+      document.getElementById("telaPausa").classList.toggle("escondido", travado);
+    }
+  });
+
+  document.addEventListener("mousemove", function (e) {
+    if (!travado) return;
+    var SENSIBILIDADE = 0.0022;
+    jogador.yaw -= e.movementX * SENSIBILIDADE;
+    jogador.pitch -= e.movementY * SENSIBILIDADE;
+    var limite = Math.PI / 2 - 0.05;
+    if (jogador.pitch > limite) jogador.pitch = limite;
+    if (jogador.pitch < -limite) jogador.pitch = -limite;
+  });
+
+  // ==================== Hotbar (interface) ====================
+
+  function construirHotbar() {
+    var hotbarEl = document.getElementById("hotbar");
+    hotbarEl.innerHTML = "";
+    var funcoesTextura = {};
+    funcoesTextura[TIPO.GRAMA] = texturaGramaTopo;
+    funcoesTextura[TIPO.TERRA] = texturaTerra;
+    funcoesTextura[TIPO.PEDRA] = texturaPedra;
+    funcoesTextura[TIPO.AREIA] = texturaAreia;
+    funcoesTextura[TIPO.TRONCO] = texturaTroncoLado;
+    funcoesTextura[TIPO.FOLHAS] = texturaFolhas;
+    funcoesTextura[TIPO.TIJOLO] = texturaTijolo;
+    funcoesTextura[TIPO.VIDRO] = texturaVidro;
+    funcoesTextura[TIPO.AGUA] = texturaAgua;
+    funcoesTextura[TIPO.NEVE] = texturaNeve;
+    funcoesTextura[TIPO.OURO] = texturaOuro;
+    funcoesTextura[TIPO.LA_VERMELHA] = texturaLaVermelha;
+    funcoesTextura[TIPO.LA_AZUL] = texturaLaAzul;
+    funcoesTextura[FERRAMENTA.PICARETA] = texturaPicareta;
+    funcoesTextura[FERRAMENTA.MACHADO] = texturaMachado;
+    funcoesTextura[FERRAMENTA.PA] = texturaPa;
+    funcoesTextura[FERRAMENTA.ESPADA] = texturaEspada;
+
+    LISTA_HOTBAR.forEach(function (tipo, i) {
+      var slot = document.createElement("div");
+      slot.className = "slot";
+      slot.dataset.indice = i;
+      var canvasIcone = funcoesTextura[tipo]();
+      slot.appendChild(canvasIcone);
+      if (i < 9) {
+        var numero = document.createElement("span");
+        numero.className = "numero";
+        numero.textContent = i + 1;
+        slot.appendChild(numero);
+      }
+      slot.addEventListener("click", function () { selecionarHotbar(i); });
+      hotbarEl.appendChild(slot);
+    });
+    atualizarSelecaoHotbar();
+  }
+
+  function selecionarHotbar(i) {
+    blocoSelecionado = LISTA_HOTBAR[i];
+    atualizarSelecaoHotbar();
+  }
+  function atualizarSelecaoHotbar() {
+    var slots = document.querySelectorAll(".slot");
+    slots.forEach(function (s) {
+      s.classList.toggle("selecionado", LISTA_HOTBAR[Number(s.dataset.indice)] === blocoSelecionado);
+    });
+  }
+
+  // ==================== Loop principal ====================
+
+  var ultimoTempo = null;
+  function laco(timestamp) {
+    if (ultimoTempo === null) ultimoTempo = timestamp;
+    var dt = Math.min((timestamp - ultimoTempo) / 1000, 0.06);
+    ultimoTempo = timestamp;
+
+    if (!pausado) {
+      atualizarJogador(dt);
+      atualizarCicloDia(dt);
+      atualizarQuebra(dt);
+      atualizarRede(dt);
+      atualizarNpcs(dt);
+    }
+    sincronizarCamera(); // sempre roda, mesmo pausado, pra câmera nunca ficar fora do lugar
+
+    renderizador.render(cena, camera);
+    requestAnimationFrame(laco);
+  }
+
+  // ==================== Início ====================
+
+  document.getElementById("btnComecar").addEventListener("click", function () {
+    modoJogo = "solo";
+    document.getElementById("telaInicial").classList.add("escondido");
+    document.getElementById("hotbar").classList.remove("escondido");
+    document.getElementById("ajuda").classList.remove("escondido");
+    document.getElementById("relogio").classList.remove("escondido");
+    jogoComecado = true;
+    iniciarAudio();
+    canvas3d.requestPointerLock();
+  });
+
+  document.getElementById("btnEntrarSalaMundo").addEventListener("click", function () {
+    var codigo = document.getElementById("inputSalaMundo").value.trim();
+    if (!codigo) { document.getElementById("statusRedeMundo").textContent = "Digite um código de sala primeiro."; return; }
+    this.disabled = true; // evita clique duplo/triplo criando conexões repetidas na mesma sala
+    iniciarAudio();
+    conectarRedeMundo(codigo);
+  });
+
+  document.getElementById("btnRecarregarRede").addEventListener("click", function () {
+    location.reload();
+  });
+
+  document.getElementById("btnContinuar").addEventListener("click", function () {
+    canvas3d.requestPointerLock();
+  });
+
+  document.getElementById("btnResetarMundo").addEventListener("click", function () {
+    if (modoJogo === "rede") {
+      window.alert("Resetar mundo não está disponível no modo em rede, pra não bagunçar o mundo dos colegas.");
+      return;
+    }
+    var confirmou = window.confirm("Tem certeza? Isso apaga tudo que você construiu e gera um mundo novo.");
+    if (!confirmou) return;
+    resetarMundo();
+  });
+
+  function resetarMundo() {
+    try { localStorage.removeItem(CHAVE_SALVAR); } catch (e) { /* sem localStorage: sem problema */ }
+    semente = { ox: Math.random() * 1000, oz: Math.random() * 1000 };
+    edicoes = {};
+    gerarTerrenoBase();
+    aplicarEdicoes();
+    criarNpcsDaVila(vilaInfo.pontosDeMorada);
+    reconstruirMalhas();
+    posicionarJogadorNoSpawn();
+    sincronizarCamera();
+    voando = false;
+    canvas3d.requestPointerLock();
+  }
+
+  iniciarMundo();
+  inicializarThree();
+  criarNpcsDaVila(vilaInfo.pontosDeMorada);
+  reconstruirMalhas();
+  posicionarJogadorNoSpawn();
+  sincronizarCamera();
+  construirHotbar();
+  atualizarCicloDia(0);
+  requestAnimationFrame(laco);
+</script>
+</body>
+</html>

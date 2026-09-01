@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linha do Tempo do Brasil</title>
+<style>
+  :root { --marrom:#92400e; --dourado:#d97706; --fundo:#fdf6ec; --verde:#22c55e; --vermelho:#ef4444; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--marrom);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 560px; text-align: center; color: #57534e; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+
+  .cartao {
+    background: white; border-radius: 20px; padding: 24px;
+    box-shadow: 0 6px 16px rgba(146,64,14,0.14);
+    width: 100%; max-width: 720px; text-align: center;
+  }
+  .progresso { font-weight: 700; color: #78716c; margin-bottom: 4px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+
+  .secao-titulo { font-weight: 800; color: var(--marrom); margin: 14px 0 8px; text-align: left; font-size: 0.95rem; }
+
+  .linha-tempo { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
+  .slot {
+    width: 118px; min-height: 96px; border-radius: 14px; border: 2px dashed #d6d3d1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 8px; font-size: 0.8rem; color: #a8a29e; cursor: default; position: relative;
+  }
+  .slot .numero-slot {
+    position: absolute; top: 4px; left: 8px; font-size: 0.68rem; font-weight: 800; color: #a8a29e;
+  }
+  .slot.preenchido { border-style: solid; border-color: var(--dourado); cursor: pointer; color: #1e293b; }
+  .slot.preenchido:hover { background: #fff7ed; }
+  .slot .icone-slot { font-size: 1.6rem; }
+  .slot .texto-slot { font-size: 0.72rem; font-weight: 700; line-height: 1.25; margin-top: 4px; }
+  .slot .ano-slot { font-size: 0.85rem; font-weight: 800; margin-top: 4px; }
+  .slot.certo { border-color: var(--verde); background: #f0fdf4; }
+  .slot.errado { border-color: var(--vermelho); background: #fef2f2; }
+
+  .mao { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 8px; min-height: 96px; }
+  .carta {
+    width: 118px; min-height: 96px; border-radius: 14px; background: var(--fundo);
+    border: 2px solid #fde68a; padding: 8px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700; line-height: 1.25; text-align: center;
+  }
+  .carta:hover { background: #fef3c7; }
+  .carta .icone-carta { font-size: 1.6rem; margin-bottom: 4px; }
+
+  .gabarito {
+    margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: #f8fafc;
+    font-size: 0.85rem; color: #334155; text-align: left; line-height: 1.6;
+  }
+
+  button.acao {
+    background: var(--dourado); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 16px;
+  }
+  button.acao:disabled { background: #e7e5e4; color: #a8a29e; cursor: not-allowed; }
+  button.secundario {
+    background: none; border: none; color: #78716c; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; margin-top: 8px; text-decoration: underline;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #fef3c7; }
+  .btn-nivel small { display: block; font-weight: 400; color: #78716c; font-size: 0.8rem; }
+
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--dourado); margin-bottom: 6px; }
+  .resultado-percentual { color: #78716c; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>📜 Linha do Tempo do Brasil</h1>
+<p class="instrucoes">Clique nas cartas abaixo, na ordem em que você acha que os fatos aconteceram (do mais antigo pro mais recente). Depois, clique em "Verificar"!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano)</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano)</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano)</small></button>
+  </div>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+
+  <div id="telaJogo">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+
+    <div class="secao-titulo">🕰️ Linha do tempo (clique numa carta preenchida pra tirá-la)</div>
+    <div class="linha-tempo" id="linhaTempo"></div>
+
+    <div class="secao-titulo">🗂️ Cartas (clique pra colocar na linha do tempo)</div>
+    <div class="mao" id="mao"></div>
+
+    <div>
+      <button class="acao" id="btnVerificar" disabled>✅ Verificar</button>
+      <br>
+      <button class="secundario" id="btnLimpar">↺ Recomeçar esta rodada</button>
+    </div>
+
+    <div class="gabarito escondido" id="gabarito"></div>
+    <button class="acao escondido" id="btnProximaRodada">Próxima rodada ➡️</button>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+
+</div>
+
+<script>
+  // Banco de fatos históricos do Brasil (todos originais, texto curto e neutro,
+  // no nível de Fundamental I). "ano" é usado só pra ordenar e conferir. "nivel" marca fatos
+  // mais conhecidos (facil) até mais específicos (dificil) — os níveis são cumulativos.
+  var BANCO_EVENTOS = [
+    { ano: 1500, icone: "🚢", texto: "Chegada dos portugueses ao Brasil, liderados por Pedro Álvares Cabral", nivel: "facil" },
+    { ano: 1822, icone: "🇧🇷", texto: "Independência do Brasil, proclamada por Dom Pedro I", nivel: "facil" },
+    { ano: 1888, icone: "📜", texto: "Lei Áurea: fim da escravidão no Brasil", nivel: "facil" },
+    { ano: 1889, icone: "🏛️", texto: "Proclamação da República no Brasil", nivel: "facil" },
+    { ano: 1960, icone: "🏙️", texto: "Brasília se torna a nova capital do Brasil", nivel: "facil" },
+    { ano: 1985, icone: "🗳️", texto: "Fim da ditadura militar e volta de presidentes eleitos pelo povo", nivel: "facil" },
+    { ano: 1994, icone: "💰", texto: "Criação do Real, a moeda usada no Brasil até hoje", nivel: "medio" },
+    { ano: 2002, icone: "🏆", texto: "Seleção Brasileira conquista o pentacampeonato na Copa do Mundo", nivel: "medio" },
+    { ano: 2014, icone: "⚽", texto: "O Brasil sedia a Copa do Mundo de futebol", nivel: "medio" },
+    { ano: 2016, icone: "🥇", texto: "O Rio de Janeiro sedia os Jogos Olímpicos", nivel: "medio" },
+    { ano: 1908, icone: "🚢", texto: "Chegada dos primeiros imigrantes japoneses ao Brasil", nivel: "dificil" },
+    { ano: 1930, icone: "📯", texto: "Início da Era Vargas, após a Revolução de 1930", nivel: "dificil" },
+    { ano: 1988, icone: "📘", texto: "Nova Constituição Federal, chamada de 'Constituição Cidadã'", nivel: "dificil" },
+    { ano: 1554, icone: "🏙️", texto: "Fundação da cidade de São Paulo", nivel: "facil" },
+    { ano: 1808, icone: "👑", texto: "Chegada da família real portuguesa ao Brasil, fugindo de Portugal", nivel: "facil" },
+    { ano: 1964, icone: "🪖", texto: "Início do regime militar no Brasil", nivel: "medio" },
+    { ano: 1957, icone: "🏗️", texto: "Início da construção de Brasília", nivel: "dificil" },
+    { ano: 1992, icone: "✊", texto: "Movimento 'Caras-pintadas', que pediu o impeachment de um presidente", nivel: "dificil" }
+  ];
+
+  var NIVEIS = {
+    facil: { tamanhoRodada: 3, numRodadas: 2, niveisIncluidos: ["facil"] },
+    medio: { tamanhoRodada: 5, numRodadas: 3, niveisIncluidos: ["facil", "medio"] },
+    dificil: { tamanhoRodada: 6, numRodadas: 3, niveisIncluidos: ["facil", "medio", "dificil"] }
+  };
+  var nivelEscolhido = "medio";
+  var TAMANHO_RODADA = 5;
+  var NUM_RODADAS = 3;
+
+  var telaJogo = document.getElementById("telaJogo");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var linhaTempoEl = document.getElementById("linhaTempo");
+  var maoEl = document.getElementById("mao");
+  var btnVerificar = document.getElementById("btnVerificar");
+  var btnLimpar = document.getElementById("btnLimpar");
+  var gabaritoEl = document.getElementById("gabarito");
+  var btnProximaRodada = document.getElementById("btnProximaRodada");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var rodadaAtual = 0;
+  var acertosTotal = 0;
+  var eventosRodada = [];   // os TAMANHO_RODADA eventos desta rodada, em ordem de exibição na "mão"
+  var slots = [];           // array de tamanho TAMANHO_RODADA: null ou o objeto do evento colocado ali
+  var verificado = false;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var config = NIVEIS[nivelEscolhido];
+    TAMANHO_RODADA = config.tamanhoRodada;
+    NUM_RODADAS = config.numRodadas;
+    rodadaAtual = 0;
+    acertosTotal = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaJogo.classList.remove("escondido");
+    iniciarRodada();
+  }
+
+  function poolDoNivel() {
+    var incluidos = NIVEIS[nivelEscolhido].niveisIncluidos;
+    return BANCO_EVENTOS.filter(function (ev) { return incluidos.indexOf(ev.nivel) !== -1; });
+  }
+
+  function iniciarRodada() {
+    eventosRodada = embaralhar(poolDoNivel()).slice(0, TAMANHO_RODADA);
+    slots = new Array(TAMANHO_RODADA).fill(null);
+    verificado = false;
+    gabaritoEl.classList.add("escondido");
+    btnProximaRodada.classList.add("escondido");
+    btnVerificar.classList.remove("escondido");
+    btnLimpar.classList.remove("escondido");
+    progressoEl.textContent = "Rodada " + (rodadaAtual + 1) + " de " + NUM_RODADAS;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertosTotal + " / " + (rodadaAtual * TAMANHO_RODADA);
+    renderizar();
+  }
+
+  function eventosNaMao() {
+    return eventosRodada.filter(function (ev) { return slots.indexOf(ev) === -1; });
+  }
+
+  function colocarNoPrimeiroSlotVazio(evento) {
+    if (verificado) return;
+    var i = slots.indexOf(null);
+    if (i === -1) return;
+    slots[i] = evento;
+    renderizar();
+  }
+
+  function removerDoSlot(indice) {
+    if (verificado) return;
+    slots[indice] = null;
+    renderizar();
+  }
+
+  function renderizar() {
+    linhaTempoEl.innerHTML = "";
+    slots.forEach(function (evento, i) {
+      var slotEl = document.createElement("div");
+      slotEl.className = "slot" + (evento ? " preenchido" : "");
+      var numero = document.createElement("span");
+      numero.className = "numero-slot";
+      numero.textContent = (i + 1) + "º";
+      slotEl.appendChild(numero);
+
+      if (evento) {
+        var icone = document.createElement("div");
+        icone.className = "icone-slot";
+        icone.textContent = evento.icone;
+        var texto = document.createElement("div");
+        texto.className = "texto-slot";
+        texto.textContent = evento.texto;
+        slotEl.appendChild(icone);
+        slotEl.appendChild(texto);
+        slotEl.addEventListener("click", function () { removerDoSlot(i); });
+      } else {
+        var dica = document.createElement("div");
+        dica.textContent = "vazio";
+        slotEl.appendChild(dica);
+      }
+      linhaTempoEl.appendChild(slotEl);
+    });
+
+    maoEl.innerHTML = "";
+    eventosNaMao().forEach(function (evento) {
+      var cartaEl = document.createElement("div");
+      cartaEl.className = "carta";
+      var icone = document.createElement("div");
+      icone.className = "icone-carta";
+      icone.textContent = evento.icone;
+      var texto = document.createElement("div");
+      texto.textContent = evento.texto;
+      cartaEl.appendChild(icone);
+      cartaEl.appendChild(texto);
+      cartaEl.addEventListener("click", function () { colocarNoPrimeiroSlotVazio(evento); });
+      maoEl.appendChild(cartaEl);
+    });
+
+    btnVerificar.disabled = slots.indexOf(null) !== -1;
+  }
+
+  function verificar() {
+    var ordemCorreta = eventosRodada.slice().sort(function (a, b) { return a.ano - b.ano; });
+    var acertosRodada = 0;
+
+    var slotEls = linhaTempoEl.querySelectorAll(".slot");
+    slots.forEach(function (evento, i) {
+      var certo = evento === ordemCorreta[i];
+      if (certo) acertosRodada++;
+      var slotEl = slotEls[i];
+      slotEl.classList.add(certo ? "certo" : "errado");
+      var anoEl = document.createElement("div");
+      anoEl.className = "ano-slot";
+      anoEl.textContent = evento.ano;
+      slotEl.appendChild(anoEl);
+    });
+
+    acertosTotal += acertosRodada;
+    verificado = true;
+    btnVerificar.classList.add("escondido");
+    btnLimpar.classList.add("escondido");
+    pontuacaoAtualEl.textContent = "Acertos: " + acertosTotal + " / " + ((rodadaAtual + 1) * TAMANHO_RODADA);
+
+    var linhaCorreta = ordemCorreta.map(function (ev) { return ev.ano + " " + ev.icone + " " + ev.texto; }).join("<br>");
+    gabaritoEl.innerHTML = "<strong>Você acertou " + acertosRodada + " de " + TAMANHO_RODADA + " posições nesta rodada.</strong><br><br>Ordem certa:<br>" + linhaCorreta;
+    gabaritoEl.classList.remove("escondido");
+    btnProximaRodada.classList.remove("escondido");
+    btnProximaRodada.textContent = (rodadaAtual + 1 < NUM_RODADAS) ? "Próxima rodada ➡️" : "Ver resultado final 🏁";
+  }
+
+  function proximaRodada() {
+    rodadaAtual++;
+    if (rodadaAtual < NUM_RODADAS) {
+      iniciarRodada();
+    } else {
+      mostrarResultado();
+    }
+  }
+
+  function mostrarResultado() {
+    telaJogo.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var totalSlots = NUM_RODADAS * TAMANHO_RODADA;
+    var percentual = Math.round((acertosTotal / totalSlots) * 100);
+    resultadoNumero.textContent = acertosTotal + " / " + totalSlots;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🏆 Você manja de História do Brasil!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem, quase lá!";
+    else resultadoTitulo.textContent = "💪 Vamos revisar essas datas de novo!";
+  }
+
+  btnVerificar.addEventListener("click", verificar);
+  btnLimpar.addEventListener("click", function () { slots = new Array(TAMANHO_RODADA).fill(null); renderizar(); });
+  btnProximaRodada.addEventListener("click", proximaRodada);
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

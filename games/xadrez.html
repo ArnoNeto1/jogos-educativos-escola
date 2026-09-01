@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xadrez</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; --creme:#fef9e7; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 520px; text-align: center; color: #475569; margin-bottom: 14px; font-size: 0.95rem; }
+  .escondido { display: none !important; }
+
+  .cartao-config {
+    background: white; border-radius: 20px; padding: 26px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 420px; text-align: center;
+  }
+  .cartao-config h2 { margin: 0 0 16px; font-size: 1.2rem; }
+  .opcoes-config { display: flex; flex-direction: column; gap: 12px; }
+  .btn-config {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px;
+  }
+  .btn-config:hover { background: #dbeafe; }
+  .btn-config .emoji { font-size: 1.4rem; }
+  .btn-config small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .btn-voltar-config {
+    margin-top: 14px; background: none; border: none; color: var(--azul); font-weight: 700; cursor: pointer; font-size: 0.9rem;
+  }
+
+  .info-modo { font-weight: 700; color: #6d28d9; margin-bottom: 10px; text-align: center; font-size: 0.95rem; }
+
+  .painel {
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center;
+    background: white; padding: 10px 20px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 10px;
+  }
+  .capturas { font-size: 1.1rem; min-height: 1.4em; letter-spacing: 2px; }
+  .status {
+    font-weight: 700; font-size: 1.15rem; min-height: 1.6em; margin-bottom: 14px; text-align: center;
+  }
+  .status.xeque { color: var(--vermelho); }
+  .status.pensando { color: #6d28d9; }
+
+  .tabuleiro {
+    display: grid;
+    grid-template-columns: repeat(8, 52px);
+    grid-template-rows: repeat(8, 52px);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(30,64,175,0.2);
+  }
+  .tabuleiro.bloqueado { pointer-events: none; opacity: 0.85; }
+  .casa {
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.1rem; cursor: pointer; user-select: none;
+    position: relative; border: none;
+  }
+  .casa.clara { background: var(--creme); }
+  .casa.escura { background: var(--roxo); }
+  .casa.selecionada { background: #fde047 !important; }
+  .casa.destino-livre { background: #86efac !important; }
+  .casa.destino-captura { background: #fca5a5 !important; }
+  .peca-branca { color: #ffffff; text-shadow: -1px 0 #1e293b, 0 1px #1e293b, 1px 0 #1e293b, 0 -1px #1e293b; }
+  .peca-preta { color: #111827; }
+
+  .controles { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer;
+  }
+  button.secundario {
+    background: white; color: var(--azul); border: 2px solid var(--azul); font-weight: 700; font-size: 1rem;
+    padding: 10px 22px; border-radius: 999px; cursor: pointer;
+  }
+  @media (max-width: 460px) {
+    .tabuleiro { grid-template-columns: repeat(8, 38px); grid-template-rows: repeat(8, 38px); }
+    .casa { width: 38px; height: 38px; font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<div id="avisoRedeCaida" class="escondido" style="position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:60; background:#dc2626; color:white; font-weight:700; font-size:0.9rem; padding:10px 20px; border-radius:999px; box-shadow:0 4px 12px rgba(0,0,0,0.35); text-align:center; max-width:90vw;">
+  ⚠️ Conexão com o servidor perdida.
+  <button id="btnRecarregarRede" style="margin-left:8px; background:white; color:#dc2626; border:none; border-radius:999px; padding:4px 12px; font-weight:700; cursor:pointer;">Recarregar</button>
+</div>
+<h1>♔ Xadrez ♚</h1>
+<p class="instrucoes">Clique numa peça para ver os movimentos possíveis (verde = mover, vermelho = capturar) e clique no destino. Versão simplificada: sem roque e sem "en passant"; o peão sempre vira Dama ao promover.</p>
+
+<div id="telaConfigModo" class="cartao-config">
+  <h2>Como você quer jogar?</h2>
+  <div class="opcoes-config">
+    <button class="btn-config" id="btnDoisJogadores">
+      <span class="emoji">🧑‍🤝‍🧑</span>
+      <span>Dois jogadores<br><small>No mesmo aparelho, um de cada vez</small></span>
+    </button>
+    <button class="btn-config" id="btnContraComputador">
+      <span class="emoji">🤖</span>
+      <span>Contra o computador<br><small>Você joga de Brancas</small></span>
+    </button>
+    <button class="btn-config" id="btnJogarEmRede">
+      <span class="emoji">🌐</span>
+      <span>Jogar em rede<br><small>Contra outro aluno, em outro computador</small></span>
+    </button>
+  </div>
+</div>
+
+<div id="telaConfigRede" class="cartao-config escondido">
+  <h2>🌐 Jogar em rede</h2>
+  <p style="color:#475569; font-size:0.85rem; margin-top:0;">
+    Combine um código de sala com o colega (ex: "turma1") e digite o mesmo nos dois computadores.
+  </p>
+  <input type="text" id="inputSalaXadrez" placeholder="Código da sala"
+    style="width:100%; padding:12px 14px; border-radius:12px; border:2px solid #cbd5e1; font-size:1rem; margin-bottom:12px; text-align:center; box-sizing:border-box;">
+  <button class="acao" id="btnEntrarSalaXadrez" style="width:100%;">Entrar na sala</button>
+  <p id="statusRedeXadrez" style="margin-top:12px; font-weight:700; color:#6d28d9; min-height:1.4em;"></p>
+  <button class="btn-voltar-config" id="btnVoltarModoDeRede">⬅ Voltar</button>
+</div>
+
+<div id="telaConfigDificuldade" class="cartao-config escondido">
+  <h2>Escolha a dificuldade</h2>
+  <div class="opcoes-config">
+    <button class="btn-config" data-dificuldade="facil">
+      <span class="emoji">🟢</span>
+      <span>Fácil (1º ao 3º ano)<br><small>O computador joga ao acaso</small></span>
+    </button>
+    <button class="btn-config" data-dificuldade="medio">
+      <span class="emoji">🟡</span>
+      <span>Médio (4º ao 6º ano)<br><small>Pensa um pouco antes de jogar</small></span>
+    </button>
+    <button class="btn-config" data-dificuldade="dificil">
+      <span class="emoji">🔴</span>
+      <span>Difícil (7º ao 9º ano)<br><small>Pensa bem mais antes de jogar</small></span>
+    </button>
+  </div>
+  <button class="btn-voltar-config" id="btnVoltarModo">⬅ Voltar</button>
+</div>
+
+<div id="areaJogo" class="escondido">
+  <div class="info-modo" id="infoModo"></div>
+
+  <div class="painel">
+    <span>♚ Pretas capturaram: <span class="capturas" id="capturasPreto"></span></span>
+    <span>♔ Brancas capturaram: <span class="capturas" id="capturasBranco"></span></span>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="tabuleiro" id="tabuleiro"></div>
+
+  <div class="controles">
+    <button class="acao" id="btnReiniciar">🔄 Novo jogo</button>
+    <button class="secundario" id="btnTrocarModo">⚙️ Trocar modo</button>
+  </div>
+</div>
+
+<script src="../lib/rede.js"></script>
+<script>
+  var TIPOS_UNICODE = {
+    branco: { rei: "♔", dama: "♕", torre: "♖", bispo: "♗", cavalo: "♘", peao: "♙" },
+    preto:  { rei: "♚", dama: "♛", torre: "♜", bispo: "♝", cavalo: "♞", peao: "♟" }
+  };
+  var NOMES_DIFICULDADE = { facil: "Fácil 🟢 (1º-3º ano)", medio: "Médio 🟡 (4º-6º ano)", dificil: "Difícil 🔴 (7º-9º ano)" };
+  var VALORES_PECA = { peao: 1, cavalo: 3, bispo: 3, torre: 5, dama: 9, rei: 0 };
+
+  var DIRECOES_BISPO = [[-1,-1],[-1,1],[1,-1],[1,1]];
+  var DIRECOES_TORRE = [[-1,0],[1,0],[0,-1],[0,1]];
+  var DIRECOES_DAMA = DIRECOES_BISPO.concat(DIRECOES_TORRE);
+  var OFFSETS_CAVALO = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+
+  var telaConfigModo = document.getElementById("telaConfigModo");
+  var telaConfigDificuldade = document.getElementById("telaConfigDificuldade");
+  var areaJogo = document.getElementById("areaJogo");
+  var infoModoEl = document.getElementById("infoModo");
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var statusEl = document.getElementById("status");
+  var capturasBrancoEl = document.getElementById("capturasBranco");
+  var capturasPretoEl = document.getElementById("capturasPreto");
+  var btnReiniciar = document.getElementById("btnReiniciar");
+  var btnTrocarModo = document.getElementById("btnTrocarModo");
+  var btnDoisJogadores = document.getElementById("btnDoisJogadores");
+  var btnContraComputador = document.getElementById("btnContraComputador");
+  var btnVoltarModo = document.getElementById("btnVoltarModo");
+
+  var tabuleiro, jogadorAtual, selecionada, destinosLegaisAtuais, jogoAcabou, trofeus;
+  var modoJogo = "dois-jogadores"; // "dois-jogadores" | "computador" | "rede"
+  var dificuldadeComputador = "medio";
+  var computadorPensando = false;
+  var meuCor = null; // só usado no modo "rede"
+  var rede = null;
+
+  function dentroDoTabuleiro(l, c) { return l >= 0 && l < 8 && c >= 0 && c < 8; }
+
+  function corOposta(cor) { return cor === "branco" ? "preto" : "branco"; }
+
+  function tabuleiroInicial() {
+    var linhaBase = ["torre", "cavalo", "bispo", "dama", "rei", "bispo", "cavalo", "torre"];
+    var tab = [];
+    for (var l = 0; l < 8; l++) {
+      var linha = [];
+      for (var c = 0; c < 8; c++) linha.push(null);
+      tab.push(linha);
+    }
+    for (var c = 0; c < 8; c++) {
+      tab[0][c] = { tipo: linhaBase[c], cor: "preto" };
+      tab[1][c] = { tipo: "peao", cor: "preto" };
+      tab[6][c] = { tipo: "peao", cor: "branco" };
+      tab[7][c] = { tipo: linhaBase[c], cor: "branco" };
+    }
+    return tab;
+  }
+
+  function clonarTabuleiro(tab) {
+    return tab.map(function (linha) { return linha.slice(); });
+  }
+
+  function movimentosDeslizantes(tab, l, c, direcoes) {
+    var peca = tab[l][c];
+    var destinos = [];
+    direcoes.forEach(function (d) {
+      var nl = l + d[0], nc = c + d[1];
+      while (dentroDoTabuleiro(nl, nc)) {
+        var alvo = tab[nl][nc];
+        if (alvo === null) {
+          destinos.push({ linha: nl, coluna: nc });
+        } else {
+          if (alvo.cor !== peca.cor) destinos.push({ linha: nl, coluna: nc });
+          break;
+        }
+        nl += d[0]; nc += d[1];
+      }
+    });
+    return destinos;
+  }
+
+  function movimentosPasso(tab, l, c, offsets) {
+    var peca = tab[l][c];
+    var destinos = [];
+    offsets.forEach(function (o) {
+      var nl = l + o[0], nc = c + o[1];
+      if (!dentroDoTabuleiro(nl, nc)) return;
+      var alvo = tab[nl][nc];
+      if (alvo === null || alvo.cor !== peca.cor) destinos.push({ linha: nl, coluna: nc });
+    });
+    return destinos;
+  }
+
+  function movimentosPeao(tab, l, c) {
+    var peca = tab[l][c];
+    var dir = peca.cor === "branco" ? -1 : 1;
+    var linhaInicial = peca.cor === "branco" ? 6 : 1;
+    var destinos = [];
+    var nl = l + dir;
+
+    if (dentroDoTabuleiro(nl, c) && tab[nl][c] === null) {
+      destinos.push({ linha: nl, coluna: c });
+      var nl2 = l + dir * 2;
+      if (l === linhaInicial && tab[nl2][c] === null) {
+        destinos.push({ linha: nl2, coluna: c });
+      }
+    }
+
+    [c - 1, c + 1].forEach(function (nc) {
+      if (dentroDoTabuleiro(nl, nc)) {
+        var alvo = tab[nl][nc];
+        if (alvo !== null && alvo.cor !== peca.cor) destinos.push({ linha: nl, coluna: nc });
+      }
+    });
+
+    return destinos;
+  }
+
+  function casasAtacadasPeao(tab, l, c) {
+    var peca = tab[l][c];
+    var dir = peca.cor === "branco" ? -1 : 1;
+    var nl = l + dir;
+    var destinos = [];
+    [c - 1, c + 1].forEach(function (nc) {
+      if (dentroDoTabuleiro(nl, nc)) destinos.push({ linha: nl, coluna: nc });
+    });
+    return destinos;
+  }
+
+  function movimentosPseudoLegais(tab, l, c) {
+    var peca = tab[l][c];
+    switch (peca.tipo) {
+      case "peao": return movimentosPeao(tab, l, c);
+      case "cavalo": return movimentosPasso(tab, l, c, OFFSETS_CAVALO);
+      case "bispo": return movimentosDeslizantes(tab, l, c, DIRECOES_BISPO);
+      case "torre": return movimentosDeslizantes(tab, l, c, DIRECOES_TORRE);
+      case "dama": return movimentosDeslizantes(tab, l, c, DIRECOES_DAMA);
+      case "rei": return movimentosPasso(tab, l, c, DIRECOES_DAMA);
+    }
+    return [];
+  }
+
+  function casasAtacadasPorPeca(tab, l, c) {
+    var peca = tab[l][c];
+    if (peca.tipo === "peao") return casasAtacadasPeao(tab, l, c);
+    return movimentosPseudoLegais(tab, l, c);
+  }
+
+  function casaAtacada(tab, linha, coluna, corAtacante) {
+    for (var l = 0; l < 8; l++) {
+      for (var c = 0; c < 8; c++) {
+        var peca = tab[l][c];
+        if (peca !== null && peca.cor === corAtacante) {
+          var ataques = casasAtacadasPorPeca(tab, l, c);
+          for (var i = 0; i < ataques.length; i++) {
+            if (ataques[i].linha === linha && ataques[i].coluna === coluna) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  function encontrarRei(tab, cor) {
+    for (var l = 0; l < 8; l++) {
+      for (var c = 0; c < 8; c++) {
+        var peca = tab[l][c];
+        if (peca !== null && peca.tipo === "rei" && peca.cor === cor) return { linha: l, coluna: c };
+      }
+    }
+    return null;
+  }
+
+  function reiEmXeque(tab, cor) {
+    var posicaoRei = encontrarRei(tab, cor);
+    if (!posicaoRei) return false;
+    return casaAtacada(tab, posicaoRei.linha, posicaoRei.coluna, corOposta(cor));
+  }
+
+  function moverPeca(tab, l1, c1, l2, c2) {
+    var peca = tab[l1][c1];
+    tab[l1][c1] = null;
+    var pecaFinal = peca;
+    if (peca.tipo === "peao" && (l2 === 0 || l2 === 7)) {
+      pecaFinal = { tipo: "dama", cor: peca.cor };
+    }
+    tab[l2][c2] = pecaFinal;
+  }
+
+  function movimentosLegais(tab, l, c) {
+    var peca = tab[l][c];
+    var pseudo = movimentosPseudoLegais(tab, l, c);
+    return pseudo.filter(function (destino) {
+      var copia = clonarTabuleiro(tab);
+      moverPeca(copia, l, c, destino.linha, destino.coluna);
+      return !reiEmXeque(copia, peca.cor);
+    });
+  }
+
+  function jogadorTemMovimentoLegal(tab, cor) {
+    for (var l = 0; l < 8; l++) {
+      for (var c = 0; c < 8; c++) {
+        var peca = tab[l][c];
+        if (peca !== null && peca.cor === cor) {
+          if (movimentosLegais(tab, l, c).length > 0) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function nomeJogador(cor) { return cor === "branco" ? "Brancas" : "Pretas"; }
+
+  // ---------- Motor do computador (minimax com poda alfa-beta) ----------
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function todasJogadasLegais(tab, cor) {
+    var jogadas = [];
+    for (var l = 0; l < 8; l++) {
+      for (var c = 0; c < 8; c++) {
+        var peca = tab[l][c];
+        if (peca !== null && peca.cor === cor) {
+          movimentosLegais(tab, l, c).forEach(function (destino) {
+            jogadas.push({ l1: l, c1: c, l2: destino.linha, c2: destino.coluna });
+          });
+        }
+      }
+    }
+    return jogadas;
+  }
+
+  function avaliarMaterial(tab) {
+    var total = 0;
+    for (var l = 0; l < 8; l++) {
+      for (var c = 0; c < 8; c++) {
+        var peca = tab[l][c];
+        if (peca !== null) {
+          total += (peca.cor === "branco" ? 1 : -1) * VALORES_PECA[peca.tipo];
+        }
+      }
+    }
+    return total;
+  }
+
+  // negamax: devolve a melhor pontuação possível do ponto de vista de "cor"
+  function negamax(tab, profundidade, alpha, beta, cor) {
+    var jogadas = todasJogadasLegais(tab, cor);
+
+    if (jogadas.length === 0) {
+      return reiEmXeque(tab, cor) ? -100000 : 0;
+    }
+    if (profundidade === 0) {
+      var material = avaliarMaterial(tab);
+      return cor === "branco" ? material : -material;
+    }
+
+    var melhor = -Infinity;
+    for (var i = 0; i < jogadas.length; i++) {
+      var j = jogadas[i];
+      var copia = clonarTabuleiro(tab);
+      moverPeca(copia, j.l1, j.c1, j.l2, j.c2);
+      var valor = -negamax(copia, profundidade - 1, -beta, -alpha, corOposta(cor));
+      if (valor > melhor) melhor = valor;
+      if (melhor > alpha) alpha = melhor;
+      if (alpha >= beta) break; // poda alfa-beta
+    }
+    return melhor;
+  }
+
+  function escolherJogadaComputador(tab, cor, dificuldade) {
+    var jogadas = embaralhar(todasJogadasLegais(tab, cor));
+    if (jogadas.length === 0) return null;
+
+    if (dificuldade === "facil") {
+      return jogadas[Math.floor(Math.random() * jogadas.length)];
+    }
+
+    var profundidadeTotal = dificuldade === "dificil" ? 3 : 2;
+    var melhorJogada = jogadas[0];
+    var melhorValor = -Infinity;
+
+    jogadas.forEach(function (j) {
+      var copia = clonarTabuleiro(tab);
+      moverPeca(copia, j.l1, j.c1, j.l2, j.c2);
+      var valor = -negamax(copia, profundidadeTotal - 1, -Infinity, Infinity, corOposta(cor));
+      if (valor > melhorValor) {
+        melhorValor = valor;
+        melhorJogada = j;
+      }
+    });
+
+    return melhorJogada;
+  }
+
+  function corDoComputador() { return "preto"; } // o aluno sempre joga de Brancas
+
+  function agendarJogadaComputador() {
+    computadorPensando = true;
+    statusEl.textContent = "🤖 Computador pensando...";
+    statusEl.classList.remove("xeque");
+    statusEl.classList.add("pensando");
+    tabuleiroEl.classList.add("bloqueado");
+
+    setTimeout(function () {
+      var jogada = escolherJogadaComputador(tabuleiro, corDoComputador(), dificuldadeComputador);
+      computadorPensando = false;
+      tabuleiroEl.classList.remove("bloqueado");
+      if (jogada) {
+        executarJogada(jogada.l1, jogada.c1, jogada.l2, jogada.c2);
+      }
+    }, 400);
+  }
+
+  // ---------- Configuração / fluxo de telas ----------
+
+  function mostrarConfigModo() {
+    areaJogo.classList.add("escondido");
+    telaConfigDificuldade.classList.add("escondido");
+    telaConfigModo.classList.remove("escondido");
+  }
+
+  btnDoisJogadores.addEventListener("click", function () {
+    modoJogo = "dois-jogadores";
+    telaConfigModo.classList.add("escondido");
+    areaJogo.classList.remove("escondido");
+    iniciarJogo();
+  });
+
+  btnContraComputador.addEventListener("click", function () {
+    modoJogo = "computador";
+    telaConfigModo.classList.add("escondido");
+    telaConfigDificuldade.classList.remove("escondido");
+  });
+
+  btnVoltarModo.addEventListener("click", mostrarConfigModo);
+
+  telaConfigDificuldade.querySelectorAll("[data-dificuldade]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      dificuldadeComputador = btn.dataset.dificuldade;
+      telaConfigDificuldade.classList.add("escondido");
+      areaJogo.classList.remove("escondido");
+      iniciarJogo();
+    });
+  });
+
+  btnTrocarModo.addEventListener("click", function () {
+    if (rede) { rede.fechar(); rede = null; }
+    mostrarConfigModo();
+  });
+
+  // ---------- Jogar em rede ----------
+
+  var telaConfigRede = document.getElementById("telaConfigRede");
+  var btnJogarEmRede = document.getElementById("btnJogarEmRede");
+  var btnVoltarModoDeRede = document.getElementById("btnVoltarModoDeRede");
+  var btnEntrarSalaXadrez = document.getElementById("btnEntrarSalaXadrez");
+  var statusRedeXadrez = document.getElementById("statusRedeXadrez");
+
+  btnJogarEmRede.addEventListener("click", function () {
+    telaConfigModo.classList.add("escondido");
+    telaConfigRede.classList.remove("escondido");
+  });
+
+  btnVoltarModoDeRede.addEventListener("click", function () {
+    telaConfigRede.classList.add("escondido");
+    mostrarConfigModo();
+  });
+
+  btnEntrarSalaXadrez.addEventListener("click", function () {
+    var codigo = document.getElementById("inputSalaXadrez").value.trim();
+    if (!codigo) { statusRedeXadrez.textContent = "Digite um código de sala primeiro."; return; }
+    btnEntrarSalaXadrez.disabled = true; // evita clique duplo/triplo criando conexões repetidas na mesma sala
+
+    modoJogo = "rede";
+    statusRedeXadrez.textContent = "Conectando...";
+
+    rede = criarConexaoRede({
+      sala: "xadrez-" + codigo,
+      aoConectar: function (info) {
+        if (info.quantidadeNaSala === 1) {
+          meuCor = "branco";
+          statusRedeXadrez.textContent = "Sala criada! Aguardando o outro jogador... (você será ♔ Brancas)";
+        } else {
+          meuCor = "preto";
+          statusRedeXadrez.textContent = "Conectado! Você é ♚ Pretas";
+          telaConfigRede.classList.add("escondido");
+          areaJogo.classList.remove("escondido");
+          iniciarJogo();
+        }
+      },
+      aoEntrarOutroJogador: function () {
+        statusRedeXadrez.textContent = "O outro jogador entrou! Começando a partida...";
+        telaConfigRede.classList.add("escondido");
+        areaJogo.classList.remove("escondido");
+        iniciarJogo();
+      },
+      aoReceberMensagem: function (msg) {
+        if (msg.tipo === "jogada" && !jogoAcabou) executarJogada(msg.l1, msg.c1, msg.l2, msg.c2, true);
+        if (msg.tipo === "reiniciar") iniciarJogo();
+      },
+      aoSairJogador: function () {
+        if (!jogoAcabou) {
+          jogoAcabou = true;
+          statusEl.textContent = "😕 O outro jogador saiu da sala.";
+        }
+      },
+      aoDesconectar: function () {
+        statusRedeXadrez.textContent = "Conexão com o servidor perdida.";
+        document.getElementById("avisoRedeCaida").classList.remove("escondido");
+      }
+    });
+  });
+
+  document.getElementById("btnRecarregarRede").addEventListener("click", function () {
+    location.reload();
+  });
+
+  function atualizarInfoModo() {
+    if (modoJogo === "rede") {
+      infoModoEl.textContent = "🌐 Jogando em rede — Você é " + (meuCor === "branco" ? "♔ Brancas" : "♚ Pretas");
+      infoModoEl.classList.remove("escondido");
+    } else if (modoJogo === "computador") {
+      infoModoEl.textContent = "🤖 Você (♔ Brancas) vs Computador — " + NOMES_DIFICULDADE[dificuldadeComputador];
+      infoModoEl.classList.remove("escondido");
+    } else {
+      infoModoEl.textContent = "🧑‍🤝‍🧑 Dois jogadores no mesmo aparelho";
+      infoModoEl.classList.remove("escondido");
+    }
+  }
+
+  // ---------- Jogo ----------
+
+  function iniciarJogo() {
+    tabuleiro = tabuleiroInicial();
+    jogadorAtual = "branco";
+    selecionada = null;
+    destinosLegaisAtuais = [];
+    jogoAcabou = false;
+    computadorPensando = false;
+    trofeus = { branco: [], preto: [] };
+    tabuleiroEl.classList.remove("bloqueado");
+    atualizarInfoModo();
+    atualizarStatus();
+    renderizarTabuleiro();
+    atualizarCapturas();
+  }
+
+  function atualizarStatus() {
+    var emXeque = reiEmXeque(tabuleiro, jogadorAtual);
+    var temMovimento = jogadorTemMovimentoLegal(tabuleiro, jogadorAtual);
+
+    statusEl.classList.remove("xeque", "pensando");
+
+    if (!temMovimento) {
+      jogoAcabou = true;
+      if (emXeque) {
+        statusEl.textContent = "🏆 Xeque-mate! " + nomeJogador(corOposta(jogadorAtual)) + " venceram!";
+      } else {
+        statusEl.textContent = "🤝 Empate por afogamento (sem movimentos possíveis)!";
+      }
+      return;
+    }
+
+    if (emXeque) {
+      statusEl.classList.add("xeque");
+      statusEl.textContent = "⚠️ Xeque! Vez de: " + nomeJogador(jogadorAtual);
+    } else {
+      statusEl.textContent = "Vez de: " + nomeJogador(jogadorAtual);
+    }
+  }
+
+  function atualizarCapturas() {
+    capturasBrancoEl.textContent = trofeus.branco.map(function (p) { return TIPOS_UNICODE.preto[p.tipo]; }).join(" ") || "—";
+    capturasPretoEl.textContent = trofeus.preto.map(function (p) { return TIPOS_UNICODE.branco[p.tipo]; }).join(" ") || "—";
+  }
+
+  function executarJogada(l1, c1, l2, c2, daRede) {
+    var pecaCapturada = tabuleiro[l2][c2];
+    if (pecaCapturada !== null) {
+      trofeus[jogadorAtual].push(pecaCapturada);
+    }
+    moverPeca(tabuleiro, l1, c1, l2, c2);
+    jogadorAtual = corOposta(jogadorAtual);
+    selecionada = null;
+    destinosLegaisAtuais = [];
+    atualizarStatus();
+    renderizarTabuleiro();
+    atualizarCapturas();
+
+    if (!daRede && modoJogo === "rede" && rede) {
+      rede.enviar({ tipo: "jogada", l1: l1, c1: c1, l2: l2, c2: c2 });
+    }
+
+    if (!jogoAcabou && modoJogo === "computador" && jogadorAtual === corDoComputador()) {
+      agendarJogadaComputador();
+    }
+  }
+
+  function selecionar(l, c) {
+    selecionada = { linha: l, coluna: c };
+    destinosLegaisAtuais = movimentosLegais(tabuleiro, l, c);
+    renderizarTabuleiro();
+  }
+
+  function deselecionar() {
+    selecionada = null;
+    destinosLegaisAtuais = [];
+    renderizarTabuleiro();
+  }
+
+  function aoClicarCasa(l, c) {
+    if (jogoAcabou || computadorPensando) return;
+    if (modoJogo === "rede" && jogadorAtual !== meuCor) return; // não é a sua vez
+    var peca = tabuleiro[l][c];
+
+    if (selecionada === null) {
+      if (peca !== null && peca.cor === jogadorAtual) selecionar(l, c);
+      return;
+    }
+
+    if (selecionada.linha === l && selecionada.coluna === c) {
+      deselecionar();
+      return;
+    }
+
+    var eDestinoLegal = destinosLegaisAtuais.some(function (d) { return d.linha === l && d.coluna === c; });
+    if (eDestinoLegal) {
+      executarJogada(selecionada.linha, selecionada.coluna, l, c);
+      return;
+    }
+
+    if (peca !== null && peca.cor === jogadorAtual) {
+      selecionar(l, c);
+      return;
+    }
+
+    deselecionar();
+  }
+
+  function renderizarTabuleiro() {
+    tabuleiroEl.innerHTML = "";
+    for (var l = 0; l < 8; l++) {
+      for (var c = 0; c < 8; c++) {
+        var botao = document.createElement("button");
+        var clara = (l + c) % 2 === 0;
+        botao.className = "casa " + (clara ? "clara" : "escura");
+
+        var peca = tabuleiro[l][c];
+        if (peca !== null) {
+          botao.textContent = TIPOS_UNICODE[peca.cor][peca.tipo];
+          botao.classList.add(peca.cor === "branco" ? "peca-branca" : "peca-preta");
+        }
+
+        if (selecionada !== null && selecionada.linha === l && selecionada.coluna === c) {
+          botao.classList.add("selecionada");
+        }
+
+        var destino = destinosLegaisAtuais.find(function (d) { return d.linha === l && d.coluna === c; });
+        if (destino) {
+          botao.classList.add(peca !== null ? "destino-captura" : "destino-livre");
+        }
+
+        (function (linha, coluna) {
+          botao.addEventListener("click", function () { aoClicarCasa(linha, coluna); });
+        })(l, c);
+
+        tabuleiroEl.appendChild(botao);
+      }
+    }
+  }
+
+  btnReiniciar.addEventListener("click", function () {
+    iniciarJogo();
+    if (modoJogo === "rede" && rede) rede.enviar({ tipo: "reiniciar" });
+  });
+</script>
+</body>
+</html>

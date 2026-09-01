@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geografia do Brasil</title>
+<style>
+  :root { --azul:#2563eb; --verde:#16a34a; --fundo:#eef6ff; --vermelho:#ef4444; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 560px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+
+  .layout {
+    display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start;
+    width: 100%; max-width: 900px;
+  }
+  .painel {
+    background: white; border-radius: 20px; padding: 22px;
+    box-shadow: 0 6px 16px rgba(37,99,235,0.14);
+    width: 100%; max-width: 380px; text-align: center;
+  }
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 14px; }
+  .pergunta-icone { font-size: 2.4rem; margin-bottom: 6px; }
+  .pergunta { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 10px; line-height: 1.4; }
+  .feedback { min-height: 3.2em; font-weight: 700; margin-top: 10px; font-size: 0.95rem; line-height: 1.4; }
+  .feedback.certo { color: var(--verde); }
+  .feedback.errado { color: var(--vermelho); }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 10px;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+
+  .mapa-caixa {
+    background: white; border-radius: 20px; padding: 16px;
+    box-shadow: 0 6px 16px rgba(37,99,235,0.14);
+    max-width: 480px; width: 100%;
+  }
+  svg#mapa { width: 100%; height: auto; display: block; }
+  .regiao { cursor: pointer; stroke: white; stroke-width: 3; transition: filter 0.15s; }
+  .regiao:hover { filter: brightness(1.1); }
+  .regiao.acertou { filter: brightness(1.3); stroke: #15803d; stroke-width: 6; }
+  .regiao.errou { filter: brightness(0.75); stroke: #b91c1c; stroke-width: 6; }
+  .rotulo-regiao { font-size: 20px; font-weight: 800; fill: white; text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(0,0,0,0.35); stroke-width: 3px; }
+
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--azul); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🗺️ Geografia do Brasil</h1>
+<p class="instrucoes">Leia a dica e clique na região certa do mapa!</p>
+
+<div class="painel" id="telaNivel" style="max-width:420px;">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano)</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano)</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano)</small></button>
+  </div>
+</div>
+
+<div class="layout escondido" id="telaJogo">
+  <div class="painel">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="pergunta-icone" id="perguntaIcone"></div>
+    <div class="pergunta" id="pergunta"></div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+  <div class="mapa-caixa">
+    <svg id="mapa" viewBox="0 0 500 600" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+</div>
+
+<div class="painel escondido" id="telaResultado" style="max-width:440px;">
+  <div class="resultado-titulo" id="resultadoTitulo"></div>
+  <div class="resultado-numero" id="resultadoNumero"></div>
+  <div class="resultado-percentual" id="resultadoPercentual"></div>
+  <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+</div>
+
+<script>
+  // ---- Regiões (posição/forma são só uma ilustração estilizada e simplificada,
+  // não um mapa geográfico de precisão) ----
+  var REGIOES = [
+    { id: "norte", nome: "Norte", cor: "#16a34a", cx: 220, cy: 150, rx: 175, ry: 108,
+      variacao: [1, 1.05, 0.95, 1.1, 0.88, 1.08, 0.92, 1.0] },
+    { id: "nordeste", nome: "Nordeste", cor: "#f97316", cx: 400, cy: 265, rx: 95, ry: 118,
+      variacao: [1, 0.88, 1.12, 0.92, 1.08, 0.9, 1.1, 0.95] },
+    { id: "centro-oeste", nome: "Centro-Oeste", cor: "#ca8a04", cx: 215, cy: 335, rx: 118, ry: 92,
+      variacao: [1.05, 0.92, 1.1, 0.88, 1.05, 0.95, 1.1, 0.9] },
+    { id: "sudeste", nome: "Sudeste", cor: "#2563eb", cx: 340, cy: 435, rx: 90, ry: 80,
+      variacao: [1, 1.1, 0.9, 1.05, 0.92, 1.1, 0.9, 1.05] },
+    { id: "sul", nome: "Sul", cor: "#7c3aed", cx: 225, cy: 525, rx: 108, ry: 74,
+      variacao: [0.95, 1.05, 0.9, 1.1, 0.95, 1.05, 0.88, 1.1] }
+  ];
+
+  // Banco de perguntas — cada uma aponta pra um id de região (ver REGIOES acima) e tem um
+  // "nivel" (facil/medio/dificil). Os níveis são cumulativos: o nível "difícil" usa o banco
+  // inteiro, "médio" usa facil+medio, e "fácil" usa só as perguntas mais diretas (onde fica).
+  var BANCO_PERGUNTAS = [
+    { icone: "🗺️", texto: "Onde fica a região Norte do Brasil?", regiao: "norte", nivel: "facil" },
+    { icone: "🗺️", texto: "Onde fica a região Nordeste do Brasil?", regiao: "nordeste", nivel: "facil" },
+    { icone: "🗺️", texto: "Onde fica a região Centro-Oeste do Brasil?", regiao: "centro-oeste", nivel: "facil" },
+    { icone: "🗺️", texto: "Onde fica a região Sudeste do Brasil?", regiao: "sudeste", nivel: "facil" },
+    { icone: "🗺️", texto: "Onde fica a região Sul do Brasil?", regiao: "sul", nivel: "facil" },
+    { icone: "🌳", texto: "Essa região tem a maior floresta tropical do mundo, a Floresta Amazônica.", regiao: "norte", nivel: "medio" },
+    { icone: "🏖️", texto: "Região famosa pelas praias, pelo forró e pelo São João.", regiao: "nordeste", nivel: "medio" },
+    { icone: "🏛️", texto: "Aqui fica Brasília, a capital do Brasil.", regiao: "centro-oeste", nivel: "medio" },
+    { icone: "🗽", texto: "Aqui fica o Cristo Redentor, no Rio de Janeiro.", regiao: "sudeste", nivel: "medio" },
+    { icone: "❄️", texto: "Região mais fria do Brasil, onde às vezes até neva em algumas cidades.", regiao: "sul", nivel: "medio" },
+    { icone: "🐬", texto: "Aqui fica o Rio Amazonas, um dos maiores rios do mundo.", regiao: "norte", nivel: "dificil" },
+    { icone: "⛵", texto: "Foi aqui que os portugueses chegaram ao Brasil, em 1500.", regiao: "nordeste", nivel: "dificil" },
+    { icone: "🌵", texto: "Região que tem o maior número de estados do Brasil: são 9 ao todo.", regiao: "nordeste", nivel: "dificil" },
+    { icone: "🐊", texto: "Região que tem o Pantanal, a maior área alagada do planeta.", regiao: "centro-oeste", nivel: "dificil" },
+    { icone: "🏙️", texto: "Região mais populosa do Brasil, com São Paulo e Rio de Janeiro.", regiao: "sudeste", nivel: "dificil" },
+    { icone: "☕", texto: "Região que foi (e ainda é) uma grande produtora de café no Brasil.", regiao: "sudeste", nivel: "dificil" },
+    { icone: "🧉", texto: "Região onde o chimarrão é uma tradição muito popular.", regiao: "sul", nivel: "dificil" },
+    { icone: "🏔️", texto: "Aqui fica a Serra Gaúcha, com cidades de tradição alemã e italiana.", regiao: "sul", nivel: "dificil" },
+    { icone: "🏙️", texto: "Aqui fica Manaus, uma grande cidade bem no meio da floresta.", regiao: "norte", nivel: "medio" },
+    { icone: "🌾", texto: "Região com o bioma Cerrado (a savana brasileira) e muita plantação de soja.", regiao: "centro-oeste", nivel: "medio" },
+    { icone: "🏭", texto: "Aqui fica o maior polo industrial e financeiro do Brasil, em São Paulo.", regiao: "sudeste", nivel: "medio" },
+    { icone: "🍇", texto: "Região com boa produção de vinhos, na Serra Gaúcha.", regiao: "sul", nivel: "medio" },
+    { icone: "🏔️", texto: "Aqui fica o Pico da Neblina, a montanha mais alta do Brasil.", regiao: "norte", nivel: "dificil" },
+    { icone: "🏛️", texto: "Aqui fica Salvador, uma das primeiras capitais do Brasil.", regiao: "nordeste", nivel: "dificil" },
+    { icone: "💰", texto: "Região com a maior riqueza econômica do Brasil, medida pelo PIB.", regiao: "sudeste", nivel: "dificil" },
+    { icone: "🌊", texto: "O Rio São Francisco, um dos mais importantes do Brasil, atravessa boa parte dessa região.", regiao: "nordeste", nivel: "dificil" }
+  ];
+
+  var NIVEIS = {
+    facil: { rodadas: 6, niveisIncluidos: ["facil"] },
+    medio: { rodadas: 8, niveisIncluidos: ["facil", "medio"] },
+    dificil: { rodadas: 10, niveisIncluidos: ["facil", "medio", "dificil"] }
+  };
+  var nivelEscolhido = "medio";
+
+  var telaJogo = document.getElementById("telaJogo");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var perguntaIconeEl = document.getElementById("perguntaIcone");
+  var perguntaEl = document.getElementById("pergunta");
+  var feedbackEl = document.getElementById("feedback");
+  var svgMapa = document.getElementById("mapa");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var perguntas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+  var podeClicar = false;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  // ---- Gera um "blob" orgânico e suave (curvas quadráticas passando perto de
+  // pontos ao redor de um centro) — evita ter que desenhar caminhos SVG à mão,
+  // e garante uma forma sempre válida (sem auto-interseção). ----
+  function caminhoBlob(cx, cy, rx, ry, variacao) {
+    var n = variacao.length;
+    var pontos = [];
+    for (var i = 0; i < n; i++) {
+      var angulo = (i / n) * Math.PI * 2;
+      var fator = variacao[i];
+      pontos.push({ x: cx + Math.cos(angulo) * rx * fator, y: cy + Math.sin(angulo) * ry * fator });
+    }
+    var inicio = { x: (pontos[0].x + pontos[n - 1].x) / 2, y: (pontos[0].y + pontos[n - 1].y) / 2 };
+    var d = "M " + inicio.x + " " + inicio.y + " ";
+    for (var i = 0; i < n; i++) {
+      var atual = pontos[i];
+      var proximo = pontos[(i + 1) % n];
+      var meio = { x: (atual.x + proximo.x) / 2, y: (atual.y + proximo.y) / 2 };
+      d += "Q " + atual.x + " " + atual.y + " " + meio.x + " " + meio.y + " ";
+    }
+    return d + "Z";
+  }
+
+  function construirMapa() {
+    var ns = "http://www.w3.org/2000/svg";
+    REGIOES.forEach(function (regiao) {
+      var path = document.createElementNS(ns, "path");
+      path.setAttribute("d", caminhoBlob(regiao.cx, regiao.cy, regiao.rx, regiao.ry, regiao.variacao));
+      path.setAttribute("fill", regiao.cor);
+      path.setAttribute("class", "regiao");
+      path.dataset.regiao = regiao.id;
+      path.addEventListener("click", function () { clicarRegiao(regiao.id, path); });
+      svgMapa.appendChild(path);
+    });
+    REGIOES.forEach(function (regiao) {
+      var texto = document.createElementNS(ns, "text");
+      texto.setAttribute("x", regiao.cx);
+      texto.setAttribute("y", regiao.cy);
+      texto.setAttribute("class", "rotulo-regiao");
+      texto.textContent = regiao.nome;
+      svgMapa.appendChild(texto);
+    });
+  }
+
+  function pathDaRegiao(id) {
+    return svgMapa.querySelector('.regiao[data-regiao="' + id + '"]');
+  }
+
+  function iniciarJogo() {
+    var config = NIVEIS[nivelEscolhido];
+    var pool = BANCO_PERGUNTAS.filter(function (p) { return config.niveisIncluidos.indexOf(p.nivel) !== -1; });
+    perguntas = embaralhar(pool).slice(0, config.rodadas);
+    indiceAtual = 0;
+    acertos = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    telaJogo.classList.remove("escondido");
+    mostrarPergunta();
+  }
+
+  function mostrarPergunta() {
+    var p = perguntas[indiceAtual];
+    progressoEl.textContent = "Pergunta " + (indiceAtual + 1) + " de " + perguntas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    perguntaIconeEl.textContent = p.icone;
+    perguntaEl.textContent = p.texto;
+    feedbackEl.textContent = "";
+    feedbackEl.className = "feedback";
+    svgMapa.querySelectorAll(".regiao").forEach(function (el) { el.classList.remove("acertou", "errou"); });
+    podeClicar = true;
+  }
+
+  function clicarRegiao(idClicado, pathClicado) {
+    if (!podeClicar) return;
+    podeClicar = false;
+
+    var p = perguntas[indiceAtual];
+    var nomeCorreto = REGIOES.filter(function (r) { return r.id === p.regiao; })[0].nome;
+
+    if (idClicado === p.regiao) {
+      acertos++;
+      pathClicado.classList.add("acertou");
+      feedbackEl.textContent = "✅ Isso mesmo! É a região " + nomeCorreto + ".";
+      feedbackEl.className = "feedback certo";
+    } else {
+      pathClicado.classList.add("errou");
+      var pathCorreto = pathDaRegiao(p.regiao);
+      if (pathCorreto) pathCorreto.classList.add("acertou");
+      feedbackEl.textContent = "❌ Essa não! A resposta certa era a região " + nomeCorreto + ".";
+      feedbackEl.className = "feedback errado";
+    }
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+
+    setTimeout(function () {
+      indiceAtual++;
+      if (indiceAtual < perguntas.length) {
+        mostrarPergunta();
+      } else {
+        mostrarResultado();
+      }
+    }, 1600);
+  }
+
+  function mostrarResultado() {
+    telaJogo.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / perguntas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + perguntas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🌎 Você conhece bem o mapa do Brasil!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem, quase um(a) geógrafo(a)!";
+    else resultadoTitulo.textContent = "💪 Vamos explorar o mapa mais uma vez!";
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      nivelEscolhido = btn.dataset.nivel;
+      iniciarJogo();
+    });
+  });
+
+  construirMapa();
+</script>
+</body>
+</html>

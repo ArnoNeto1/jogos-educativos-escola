@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palavras em Inglês</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#7c3aed; --verde:#22c55e; --vermelho:#ef4444; --fundo:#eef2ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--roxo);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 520px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(124,58,237,0.14);
+    width: 100%; max-width: 480px; text-align: center;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; width: 100%; margin-bottom: 12px; display: block;
+  }
+  .btn-nivel:hover { background: #e0e7ff; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+
+  .colunas { display: flex; gap: 24px; justify-content: center; }
+  .coluna { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .carta {
+    background: var(--fundo); border: 2px solid #c7d2fe; border-radius: 14px;
+    padding: 14px 8px; cursor: pointer; font-weight: 700; font-size: 1.1rem;
+    text-align: center; min-height: 30px; display: flex; align-items: center; justify-content: center;
+  }
+  .carta.emoji { font-size: 1.8rem; }
+  .carta:hover:not(.encontrada):not(.selecionada) { background: #e0e7ff; }
+  .carta.selecionada { background: #fde68a; border-color: #f59e0b; }
+  .carta.encontrada { background: #dcfce7; border-color: var(--verde); color: var(--verde); cursor: default; }
+  .carta.errada { background: #fee2e2; border-color: var(--vermelho); }
+
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--roxo); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+  button.acao {
+    background: var(--roxo); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🇬🇧 Palavras em Inglês</h1>
+<p class="instrucoes">Clique numa palavra em inglês e depois no desenho que combina com ela!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — palavras bem conhecidas</small></button>
+  <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — mais palavras do dia a dia</small></button>
+  <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — palavras mais compridas</small></button>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+  <div id="telaJogo">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="colunas">
+      <div class="coluna" id="colunaIngles"></div>
+      <div class="coluna" id="colunaEmoji"></div>
+    </div>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+  // Cada nível usa seu próprio conjunto de palavras (não é cumulativo — palavras mais compridas
+  // ficam reservadas pro nível difícil).
+  var BANCO_PALAVRAS = {
+    facil: [
+      { ingles: "DOG", emoji: "🐶" }, { ingles: "CAT", emoji: "🐱" },
+      { ingles: "SUN", emoji: "☀️" }, { ingles: "MOON", emoji: "🌙" },
+      { ingles: "HOUSE", emoji: "🏠" }, { ingles: "BALL", emoji: "⚽" },
+      { ingles: "BOOK", emoji: "📖" }, { ingles: "WATER", emoji: "💧" }
+    ],
+    medio: [
+      { ingles: "APPLE", emoji: "🍎" }, { ingles: "BANANA", emoji: "🍌" },
+      { ingles: "CAR", emoji: "🚗" }, { ingles: "TREE", emoji: "🌳" },
+      { ingles: "FISH", emoji: "🐠" }, { ingles: "BIRD", emoji: "🐦" },
+      { ingles: "STAR", emoji: "⭐" }, { ingles: "FLOWER", emoji: "🌸" }
+    ],
+    dificil: [
+      { ingles: "ELEPHANT", emoji: "🐘" }, { ingles: "BUTTERFLY", emoji: "🦋" },
+      { ingles: "COMPUTER", emoji: "💻" }, { ingles: "BICYCLE", emoji: "🚲" },
+      { ingles: "UMBRELLA", emoji: "☂️" }, { ingles: "GUITAR", emoji: "🎸" },
+      { ingles: "AIRPLANE", emoji: "✈️" }, { ingles: "MOUNTAIN", emoji: "⛰️" }
+    ]
+  };
+
+  var NIVEIS = {
+    facil: { paresPorRodada: 4, numRodadas: 2 },
+    medio: { paresPorRodada: 4, numRodadas: 2 },
+    dificil: { paresPorRodada: 4, numRodadas: 2 }
+  };
+  var nivelEscolhido = "medio";
+
+  var telaJogo = document.getElementById("telaJogo");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var colunaInglesEl = document.getElementById("colunaIngles");
+  var colunaEmojiEl = document.getElementById("colunaEmoji");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var rodadaAtual = 0;
+  var acertosTotal = 0;
+  var errosTotal = 0;
+  var palavrasDisponiveis = [];
+  var paresDaRodada = [];
+  var selecionado = null; // { lado: "ingles"|"emoji", idPar, elemento }
+  var paresEncontrados = 0;
+  var travado = false;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    rodadaAtual = 0;
+    acertosTotal = 0;
+    errosTotal = 0;
+    palavrasDisponiveis = embaralhar(BANCO_PALAVRAS[nivelEscolhido]);
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaJogo.classList.remove("escondido");
+    iniciarRodada();
+  }
+
+  function iniciarRodada() {
+    var config = NIVEIS[nivelEscolhido];
+    if (palavrasDisponiveis.length < config.paresPorRodada) {
+      palavrasDisponiveis = embaralhar(BANCO_PALAVRAS[nivelEscolhido]);
+    }
+    paresDaRodada = palavrasDisponiveis.splice(0, config.paresPorRodada).map(function (p, i) {
+      return { idPar: i, ingles: p.ingles, emoji: p.emoji };
+    });
+    paresEncontrados = 0;
+    selecionado = null;
+    travado = false;
+
+    progressoEl.textContent = "Rodada " + (rodadaAtual + 1) + " de " + config.numRodadas;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertosTotal + " • Erros: " + errosTotal;
+
+    renderizarColuna(colunaInglesEl, embaralhar(paresDaRodada), "ingles");
+    renderizarColuna(colunaEmojiEl, embaralhar(paresDaRodada), "emoji");
+  }
+
+  function renderizarColuna(container, itens, lado) {
+    container.innerHTML = "";
+    itens.forEach(function (item) {
+      var carta = document.createElement("div");
+      carta.className = "carta" + (lado === "emoji" ? " emoji" : "");
+      carta.textContent = lado === "ingles" ? item.ingles : item.emoji;
+      carta.dataset.idPar = item.idPar;
+      carta.addEventListener("click", function () { aoClicarCarta(carta, lado, item.idPar); });
+      container.appendChild(carta);
+    });
+  }
+
+  function aoClicarCarta(carta, lado, idPar) {
+    if (travado) return;
+    if (carta.classList.contains("encontrada")) return;
+
+    if (selecionado === null) {
+      selecionado = { lado: lado, idPar: idPar, elemento: carta };
+      carta.classList.add("selecionada");
+      return;
+    }
+
+    if (selecionado.lado === lado) {
+      // trocou de ideia dentro da mesma coluna: reseleciona
+      selecionado.elemento.classList.remove("selecionada");
+      selecionado = { lado: lado, idPar: idPar, elemento: carta };
+      carta.classList.add("selecionada");
+      return;
+    }
+
+    travado = true;
+    if (selecionado.idPar === idPar) {
+      selecionado.elemento.classList.remove("selecionada");
+      selecionado.elemento.classList.add("encontrada");
+      carta.classList.add("encontrada");
+      acertosTotal++;
+      paresEncontrados++;
+      pontuacaoAtualEl.textContent = "Acertos: " + acertosTotal + " • Erros: " + errosTotal;
+      selecionado = null;
+      travado = false;
+
+      if (paresEncontrados === paresDaRodada.length) {
+        setTimeout(avancarRodada, 500);
+      }
+    } else {
+      errosTotal++;
+      pontuacaoAtualEl.textContent = "Acertos: " + acertosTotal + " • Erros: " + errosTotal;
+      selecionado.elemento.classList.add("errada");
+      carta.classList.add("errada");
+      var elAnterior = selecionado.elemento;
+      setTimeout(function () {
+        elAnterior.classList.remove("selecionada", "errada");
+        carta.classList.remove("errada");
+        selecionado = null;
+        travado = false;
+      }, 700);
+    }
+  }
+
+  function avancarRodada() {
+    rodadaAtual++;
+    if (rodadaAtual < NIVEIS[nivelEscolhido].numRodadas) {
+      iniciarRodada();
+    } else {
+      mostrarResultado();
+    }
+  }
+
+  function mostrarResultado() {
+    telaJogo.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var total = acertosTotal + errosTotal;
+    var percentual = total === 0 ? 100 : Math.round((acertosTotal / total) * 100);
+    resultadoNumero.textContent = acertosTotal + " pares certos";
+    resultadoPercentual.textContent = errosTotal + " erro(s) no caminho";
+
+    if (errosTotal === 0) resultadoTitulo.textContent = "🏆 Perfeito, sem nenhum erro!";
+    else if (percentual >= 70) resultadoTitulo.textContent = "👏 Muito bem, good job!";
+    else resultadoTitulo.textContent = "💪 Vamos praticar mais essas palavras!";
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

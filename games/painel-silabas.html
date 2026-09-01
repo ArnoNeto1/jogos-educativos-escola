@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel das Sílabas</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+
+  .painel { display: flex; gap: 22px; font-weight: 700; background: white; padding: 10px 22px;
+    border-radius: 999px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 16px; }
+
+  .cartao {
+    background: white; border-radius: 20px; padding: 26px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 460px; text-align: center;
+  }
+  .dica-imagem { font-size: 3.4rem; margin-bottom: 6px; }
+  .resposta-formada {
+    min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--fundo); border-radius: 14px; padding: 10px; margin-bottom: 18px;
+    font-size: 1.6rem; font-weight: 800; color: var(--azul); flex-wrap: wrap;
+  }
+  .silaba-pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .silaba-btn {
+    background: var(--roxo); color: white; border: none; border-radius: 12px;
+    font-size: 1.3rem; font-weight: 800; padding: 12px 18px; cursor: pointer;
+  }
+  .silaba-btn:hover:not(:disabled) { filter: brightness(1.1); }
+  .silaba-btn:disabled { opacity: 0.35; cursor: default; }
+  .silaba-btn.erro { background: var(--vermelho); }
+
+  .mensagem-vitoria {
+    margin-top: 10px; text-align: center; background: white; padding: 22px 30px;
+    border-radius: 20px; box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+  }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🔡 Painel das Sílabas</h1>
+<p class="instrucoes">Clique nas sílabas na ordem certa para formar a palavra da dica!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — palavras de 2 sílabas</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — palavras de 3 sílabas</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — palavras de 4 sílabas</small></button>
+  </div>
+</div>
+
+<div class="painel escondido" id="painelPlacar">
+  <span>✅ Palavras: <span id="palavrasFeitas">0</span> / <span id="totalPalavras">0</span></span>
+  <span>❌ Erros: <span id="totalErros">0</span></span>
+</div>
+
+<div class="cartao escondido" id="telaJogo">
+  <div class="dica-imagem" id="dicaImagem"></div>
+  <div class="resposta-formada" id="respostaFormada"></div>
+  <div class="silaba-pool" id="silabaPool"></div>
+</div>
+
+<div class="mensagem-vitoria escondido" id="telaVitoria">
+  <h2>🎉 Você formou todas as palavras!</h2>
+  <p id="resumoVitoria"></p>
+  <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+</div>
+
+<script>
+  // "nivel" é baseado no número de sílabas: fácil (2), médio (3), difícil (4) — cada nível usa
+  // só as palavras da própria contagem de sílabas (não é cumulativo, já que aqui a dificuldade
+  // é diretamente "quantas sílabas tem a palavra").
+  var BANCO_PALAVRAS = [
+    { silabas: ["GA", "TO"], emoji: "🐱", nivel: "facil" },
+    { silabas: ["PA", "TO"], emoji: "🦆", nivel: "facil" },
+    { silabas: ["BO", "LA"], emoji: "⚽", nivel: "facil" },
+    { silabas: ["CA", "SA"], emoji: "🏠", nivel: "facil" },
+    { silabas: ["ME", "SA"], emoji: "🪑", nivel: "facil" },
+    { silabas: ["POR", "TA"], emoji: "🚪", nivel: "facil" },
+    { silabas: ["LI", "VRO"], emoji: "📖", nivel: "facil" },
+    { silabas: ["NU", "VEM"], emoji: "☁️", nivel: "facil" },
+    { silabas: ["PA", "PEL"], emoji: "📄", nivel: "facil" },
+    { silabas: ["SA", "BAO"], emoji: "🧼", nivel: "facil" },
+    { silabas: ["CA", "VA", "LO"], emoji: "🐴", nivel: "medio" },
+    { silabas: ["BA", "NA", "NA"], emoji: "🍌", nivel: "medio" },
+    { silabas: ["SA", "PA", "TO"], emoji: "👞", nivel: "medio" },
+    { silabas: ["JA", "NE", "LA"], emoji: "🪟", nivel: "medio" },
+    { silabas: ["BO", "NE", "CA"], emoji: "🪆", nivel: "medio" },
+    { silabas: ["CA", "DER", "NO"], emoji: "📓", nivel: "medio" },
+    { silabas: ["ES", "CO", "LA"], emoji: "🏫", nivel: "medio" },
+    { silabas: ["A", "BE", "LHA"], emoji: "🐝", nivel: "medio" },
+    { silabas: ["MA", "CA", "CO"], emoji: "🐵", nivel: "medio" },
+    { silabas: ["PI", "RA", "TA"], emoji: "🏴‍☠️", nivel: "medio" },
+    { silabas: ["CA", "DEI", "RA"], emoji: "🪑", nivel: "medio" },
+    { silabas: ["SOR", "VE", "TE"], emoji: "🍦", nivel: "medio" },
+    { silabas: ["TE", "LE", "FO", "NE"], emoji: "☎️", nivel: "dificil" },
+    { silabas: ["BI", "CI", "CLE", "TA"], emoji: "🚲", nivel: "dificil" },
+    { silabas: ["BOR", "BO", "LE", "TA"], emoji: "🦋", nivel: "dificil" },
+    { silabas: ["CHO", "CO", "LA", "TE"], emoji: "🍫", nivel: "dificil" },
+    { silabas: ["COM", "PU", "TA", "DOR"], emoji: "💻", nivel: "dificil" },
+    { silabas: ["E", "LE", "FAN", "TE"], emoji: "🐘", nivel: "dificil" },
+    { silabas: ["TAR", "TA", "RU", "GA"], emoji: "🐢", nivel: "dificil" },
+    { silabas: ["DI", "NOS", "SAU", "RO"], emoji: "🦕", nivel: "dificil" }
+  ];
+
+  var NIVEIS = {
+    facil: { rodadas: 8 },
+    medio: { rodadas: 10 },
+    dificil: { rodadas: 8 }
+  };
+  var nivelEscolhido = "medio";
+  var QUANTIDADE_RODADA = 8;
+
+  var palavrasFeitasEl = document.getElementById("palavrasFeitas");
+  var totalPalavrasEl = document.getElementById("totalPalavras");
+  var totalErrosEl = document.getElementById("totalErros");
+  var telaJogo = document.getElementById("telaJogo");
+  var telaVitoria = document.getElementById("telaVitoria");
+  var dicaImagemEl = document.getElementById("dicaImagem");
+  var respostaFormadaEl = document.getElementById("respostaFormada");
+  var silabaPoolEl = document.getElementById("silabaPool");
+  var resumoVitoria = document.getElementById("resumoVitoria");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var palavrasDaRodada = [];
+  var indicePalavra = 0;
+  var progressoNaPalavra = 0; // quantas sílabas certas já clicadas
+  var palavrasFeitas = 0;
+  var totalErros = 0;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var pool = BANCO_PALAVRAS.filter(function (p) { return p.nivel === nivelEscolhido; });
+    palavrasDaRodada = embaralhar(pool).slice(0, NIVEIS[nivelEscolhido].rodadas);
+    indicePalavra = 0;
+    palavrasFeitas = 0;
+    totalErros = 0;
+    totalPalavrasEl.textContent = palavrasDaRodada.length;
+    palavrasFeitasEl.textContent = "0";
+    totalErrosEl.textContent = "0";
+
+    telaVitoria.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("painelPlacar").classList.remove("escondido");
+    telaJogo.classList.remove("escondido");
+
+    mostrarPalavra();
+  }
+
+  function mostrarPalavra() {
+    var palavra = palavrasDaRodada[indicePalavra];
+    progressoNaPalavra = 0;
+
+    dicaImagemEl.textContent = palavra.emoji;
+    respostaFormadaEl.innerHTML = "";
+
+    var silabasEmbaralhadas = embaralhar(palavra.silabas);
+    silabaPoolEl.innerHTML = "";
+    silabasEmbaralhadas.forEach(function (silaba) {
+      var btn = document.createElement("button");
+      btn.className = "silaba-btn";
+      btn.textContent = silaba;
+      btn.addEventListener("click", function () { aoClicarSilaba(silaba, btn); });
+      silabaPoolEl.appendChild(btn);
+    });
+  }
+
+  function aoClicarSilaba(silaba, botao) {
+    if (botao.disabled) return;
+    var palavra = palavrasDaRodada[indicePalavra];
+    var silabaEsperada = palavra.silabas[progressoNaPalavra];
+
+    if (silaba === silabaEsperada) {
+      var span = document.createElement("span");
+      span.textContent = silaba;
+      respostaFormadaEl.appendChild(span);
+      botao.disabled = true;
+      progressoNaPalavra++;
+
+      if (progressoNaPalavra === palavra.silabas.length) {
+        palavrasFeitas++;
+        palavrasFeitasEl.textContent = palavrasFeitas;
+        setTimeout(function () {
+          indicePalavra++;
+          if (indicePalavra < palavrasDaRodada.length) {
+            mostrarPalavra();
+          } else {
+            finalizarJogo();
+          }
+        }, 700);
+      }
+    } else {
+      totalErros++;
+      totalErrosEl.textContent = totalErros;
+      botao.classList.add("erro");
+      setTimeout(function () { botao.classList.remove("erro"); }, 400);
+    }
+  }
+
+  function finalizarJogo() {
+    telaJogo.classList.add("escondido");
+    telaVitoria.classList.remove("escondido");
+    resumoVitoria.textContent = "Palavras formadas: " + palavrasFeitas + " • Erros: " + totalErros;
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaVitoria.classList.add("escondido");
+    document.getElementById("painelPlacar").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

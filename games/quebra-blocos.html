@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quebra-Blocos</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 12px; font-size: 0.95rem; }
+  .escondido { display: none !important; }
+  .btn-nivel {
+    background: white; border: none; border-radius: 12px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 14px 22px; cursor: pointer; text-align: left; width: 100%; max-width: 300px; margin-bottom: 10px; display: block;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.78rem; }
+
+  .painel {
+    display: flex; gap: 18px; font-weight: 700; flex-wrap: wrap; justify-content: center;
+    background: white; padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 14px;
+  }
+  .painel .recorde { color: #d97706; }
+  .area-jogo { position: relative; }
+  canvas {
+    background: #0f172a; border-radius: 16px; box-shadow: 0 6px 20px rgba(30,64,175,0.18);
+    touch-action: none; display: block;
+  }
+  .overlay {
+    position: absolute; inset: 0; background: rgba(15,23,42,0.9);
+    border-radius: 16px; color: white; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px;
+  }
+  .overlay.mostrar { display: flex; }
+  .overlay h2 { margin: 0; font-size: 1.5rem; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+  .dica { font-size: 0.8rem; color: #64748b; margin-top: 8px; text-align: center; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🧱 Quebra-Blocos</h1>
+<p class="instrucoes">Rebata a bola com a raquete pra quebrar todos os blocos! Não deixe a bola cair.</p>
+
+<div class="painel">
+  <span>⭐ Pontos: <span id="pontuacao">0</span></span>
+  <span>❤️ Vidas: <span id="vidas">3</span></span>
+  <span class="recorde">🏆 Recorde: <span id="recorde">0</span></span>
+</div>
+
+<div class="area-jogo">
+  <canvas id="canvas" width="420" height="500"></canvas>
+  <div class="overlay mostrar" id="telaNivel">
+    <h2>Escolha o nível</h2>
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — raquete maior, bola mais devagar</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — ritmo padrão</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — raquete menor, bola mais rápida, blocos duplos</small></button>
+  </div>
+  <div class="overlay" id="overlay">
+    <h2 id="overlayTitulo">Fim de jogo!</h2>
+    <p id="overlayResumo"></p>
+    <button class="acao" id="btnReiniciar">🔄 Jogar novamente</button>
+  </div>
+</div>
+<p class="dica">💡 Use as setas ⬅️➡️ ou arraste o dedo/mouse pra mover a raquete.</p>
+
+<script>
+  var CANVAS_W = 420, CANVAS_H = 500;
+  var CHAVE_RECORDE = "quebraBlocos_recorde";
+
+  var NIVEIS = {
+    facil: { larguraRaquete: 100, velocidadeBola: 4.5, linhasBlocos: 4, blocosDuplos: false },
+    medio: { larguraRaquete: 80, velocidadeBola: 5.5, linhasBlocos: 5, blocosDuplos: false },
+    dificil: { larguraRaquete: 62, velocidadeBola: 7, linhasBlocos: 6, blocosDuplos: true }
+  };
+  var nivelEscolhido = "medio";
+
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+  var pontuacaoEl = document.getElementById("pontuacao");
+  var vidasEl = document.getElementById("vidas");
+  var recordeEl = document.getElementById("recorde");
+  var overlay = document.getElementById("overlay");
+  var overlayTitulo = document.getElementById("overlayTitulo");
+  var overlayResumo = document.getElementById("overlayResumo");
+  var btnReiniciar = document.getElementById("btnReiniciar");
+
+  var RAQUETE_ALTURA = 14, RAQUETE_Y = CANVAS_H - 30;
+  var BOLA_RAIO = 7;
+  var CORES_BLOCO = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
+
+  var raqueteX, raqueteLargura;
+  var bolaX, bolaY, bolaVx, bolaVy;
+  var blocos = [], pontuacao, vidas, recorde, jogoAcabou, jogoPausadoNoInicio;
+  var idAnimacao, ultimoTimestamp;
+
+  function lerRecorde() {
+    try { return Number(localStorage.getItem(CHAVE_RECORDE)) || 0; } catch (e) { return 0; }
+  }
+  function salvarRecorde(v) {
+    try { localStorage.setItem(CHAVE_RECORDE, String(v)); } catch (e) { /* sem localStorage: sem problema */ }
+  }
+
+  function criarBlocos(config) {
+    var linhas = config.linhasBlocos, colunas = 7;
+    var margem = 10, espacoTopo = 40, alturaBloco = 18, espacamento = 4;
+    var larguraBloco = (CANVAS_W - margem * 2 - espacamento * (colunas - 1)) / colunas;
+    var lista = [];
+    for (var l = 0; l < linhas; l++) {
+      for (var c = 0; c < colunas; c++) {
+        lista.push({
+          x: margem + c * (larguraBloco + espacamento),
+          y: espacoTopo + l * (alturaBloco + espacamento),
+          largura: larguraBloco, altura: alturaBloco,
+          cor: CORES_BLOCO[l % CORES_BLOCO.length],
+          vidas: config.blocosDuplos && l < 2 ? 2 : 1
+        });
+      }
+    }
+    return lista;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var config = NIVEIS[nivelEscolhido];
+    document.getElementById("telaNivel").classList.remove("mostrar");
+    overlay.classList.remove("mostrar");
+
+    raqueteLargura = config.larguraRaquete;
+    raqueteX = (CANVAS_W - raqueteLargura) / 2;
+    resetarBola(config);
+    blocos = criarBlocos(config);
+    pontuacao = 0;
+    vidas = 3;
+    jogoAcabou = false;
+    recorde = lerRecorde();
+
+    pontuacaoEl.textContent = "0";
+    vidasEl.textContent = "3";
+    recordeEl.textContent = recorde;
+
+    if (idAnimacao) cancelAnimationFrame(idAnimacao);
+    ultimoTimestamp = null;
+    idAnimacao = requestAnimationFrame(laco);
+  }
+
+  function resetarBola(config) {
+    bolaX = CANVAS_W / 2;
+    bolaY = RAQUETE_Y - 20;
+    var angulo = (Math.random() * 0.6 - 0.3) - Math.PI / 2; // sobe, com leve variação de ângulo
+    bolaVx = Math.cos(angulo) * config.velocidadeBola;
+    bolaVy = Math.sin(angulo) * config.velocidadeBola;
+  }
+
+  function laco(timestamp) {
+    if (ultimoTimestamp === null) ultimoTimestamp = timestamp;
+    var dt = Math.min((timestamp - ultimoTimestamp) / 16.67, 2); // normaliza pra ~60fps
+    ultimoTimestamp = timestamp;
+
+    if (!jogoAcabou) atualizar(dt);
+    desenhar();
+
+    idAnimacao = requestAnimationFrame(laco);
+  }
+
+  function atualizar(dt) {
+    bolaX += bolaVx * dt;
+    bolaY += bolaVy * dt;
+
+    if (bolaX - BOLA_RAIO < 0) { bolaX = BOLA_RAIO; bolaVx *= -1; }
+    if (bolaX + BOLA_RAIO > CANVAS_W) { bolaX = CANVAS_W - BOLA_RAIO; bolaVx *= -1; }
+    if (bolaY - BOLA_RAIO < 0) { bolaY = BOLA_RAIO; bolaVy *= -1; }
+
+    // colisão com a raquete
+    if (bolaVy > 0 && bolaY + BOLA_RAIO >= RAQUETE_Y && bolaY + BOLA_RAIO <= RAQUETE_Y + RAQUETE_ALTURA + 8 &&
+        bolaX >= raqueteX && bolaX <= raqueteX + raqueteLargura) {
+      var impacto = (bolaX - (raqueteX + raqueteLargura / 2)) / (raqueteLargura / 2); // -1 a 1
+      var velocidade = Math.hypot(bolaVx, bolaVy);
+      var anguloNovo = impacto * (Math.PI / 3) - Math.PI / 2; // até 60° pros lados
+      bolaVx = Math.cos(anguloNovo) * velocidade;
+      bolaVy = Math.sin(anguloNovo) * velocidade;
+      bolaY = RAQUETE_Y - BOLA_RAIO;
+    }
+
+    // bola caiu
+    if (bolaY - BOLA_RAIO > CANVAS_H) {
+      vidas--;
+      vidasEl.textContent = vidas;
+      if (vidas <= 0) {
+        finalizarJogo(false);
+        return;
+      }
+      resetarBola(NIVEIS[nivelEscolhido]);
+    }
+
+    // colisão com blocos
+    for (var i = blocos.length - 1; i >= 0; i--) {
+      var b = blocos[i];
+      if (bolaX + BOLA_RAIO > b.x && bolaX - BOLA_RAIO < b.x + b.largura &&
+          bolaY + BOLA_RAIO > b.y && bolaY - BOLA_RAIO < b.y + b.altura) {
+        b.vidas--;
+        if (b.vidas <= 0) {
+          blocos.splice(i, 1);
+          pontuacao += 10;
+        } else {
+          pontuacao += 5;
+        }
+        pontuacaoEl.textContent = pontuacao;
+
+        // decide se bate de cima/baixo ou dos lados, comparando penetração
+        var sobreposicaoX = Math.min(bolaX + BOLA_RAIO - b.x, b.x + b.largura - (bolaX - BOLA_RAIO));
+        var sobreposicaoY = Math.min(bolaY + BOLA_RAIO - b.y, b.y + b.altura - (bolaY - BOLA_RAIO));
+        if (sobreposicaoX < sobreposicaoY) bolaVx *= -1; else bolaVy *= -1;
+        break;
+      }
+    }
+
+    if (blocos.length === 0) {
+      finalizarJogo(true);
+    }
+  }
+
+  function finalizarJogo(venceu) {
+    jogoAcabou = true;
+    var bateuRecorde = pontuacao > recorde;
+    if (bateuRecorde) { recorde = pontuacao; salvarRecorde(recorde); recordeEl.textContent = recorde; }
+
+    overlayTitulo.textContent = venceu ? "🎉 Você quebrou tudo!" : "💥 Fim de jogo!";
+    overlayResumo.textContent = "Pontos: " + pontuacao + (bateuRecorde ? " • 🎉 Novo recorde!" : "");
+    overlay.classList.add("mostrar");
+  }
+
+  function desenhar() {
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // blocos
+    blocos.forEach(function (b) {
+      ctx.fillStyle = b.cor;
+      ctx.globalAlpha = b.vidas >= 2 ? 1 : 0.75;
+      ctx.fillRect(b.x, b.y, b.largura, b.altura);
+      ctx.globalAlpha = 1;
+      if (b.vidas >= 2) {
+        ctx.strokeStyle = "rgba(255,255,255,0.7)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(b.x + 2, b.y + 2, b.largura - 4, b.altura - 4);
+      }
+    });
+
+    // raquete
+    ctx.fillStyle = "#38bdf8";
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(raqueteX, RAQUETE_Y, raqueteLargura, RAQUETE_ALTURA, 7) : ctx.rect(raqueteX, RAQUETE_Y, raqueteLargura, RAQUETE_ALTURA);
+    ctx.fill();
+
+    // bola
+    ctx.fillStyle = "#fde047";
+    ctx.beginPath();
+    ctx.arc(bolaX, bolaY, BOLA_RAIO, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function moverRaquetePara(x) {
+    raqueteX = Math.max(0, Math.min(CANVAS_W - raqueteLargura, x - raqueteLargura / 2));
+  }
+
+  var teclaEsquerda = false, teclaDireita = false;
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") teclaEsquerda = true;
+    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") teclaDireita = true;
+  });
+  document.addEventListener("keyup", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") teclaEsquerda = false;
+    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") teclaDireita = false;
+  });
+  setInterval(function () {
+    if (jogoAcabou) return;
+    if (teclaEsquerda) raqueteX = Math.max(0, raqueteX - 7);
+    if (teclaDireita) raqueteX = Math.min(CANVAS_W - raqueteLargura, raqueteX + 7);
+  }, 16);
+
+  canvas.addEventListener("mousemove", function (e) {
+    var retangulo = canvas.getBoundingClientRect();
+    var escala = CANVAS_W / retangulo.width;
+    moverRaquetePara((e.clientX - retangulo.left) * escala);
+  });
+  canvas.addEventListener("touchmove", function (e) {
+    e.preventDefault();
+    var retangulo = canvas.getBoundingClientRect();
+    var escala = CANVAS_W / retangulo.width;
+    var toque = e.touches[0];
+    moverRaquetePara((toque.clientX - retangulo.left) * escala);
+  }, { passive: false });
+
+  btnReiniciar.addEventListener("click", function () {
+    overlay.classList.remove("mostrar");
+    document.getElementById("telaNivel").classList.add("mostrar");
+    if (idAnimacao) cancelAnimationFrame(idAnimacao);
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+
+  desenhar(); // desenha um quadro vazio atrás da tela de nível
+</script>
+</body>
+</html>

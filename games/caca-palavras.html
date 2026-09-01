@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caça-Palavras</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .cartao-nivel {
+    background: white; border-radius: 20px; padding: 26px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 420px; text-align: center;
+  }
+
+  .conteudo { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+
+  .tabuleiro {
+    display: grid;
+    grid-template-columns: repeat(10, 34px);
+    grid-template-rows: repeat(10, 34px);
+    gap: 3px;
+    background: white;
+    padding: 10px;
+    border-radius: 16px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+  }
+  .letra {
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1rem; color: #1e293b;
+    background: var(--fundo);
+    border-radius: 6px; cursor: pointer; user-select: none;
+  }
+  .letra:hover { background: #dbeafe; }
+  .letra.selecionada { background: var(--amarelo); }
+  .letra.encontrada { background: var(--verde); color: white; cursor: default; }
+
+  .lista-palavras {
+    background: white; border-radius: 16px; padding: 20px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    min-width: 190px;
+  }
+  .lista-palavras h3 { margin: 0 0 10px; }
+  .lista-palavras ul { list-style: none; padding: 0; margin: 0; }
+  .lista-palavras li {
+    font-weight: 700; padding: 6px 0; font-size: 1.05rem; color: #1e293b;
+  }
+  .lista-palavras li.encontrada { color: var(--verde); text-decoration: line-through; }
+
+  .mensagem-vitoria {
+    margin-top: 20px; text-align: center; background: white; padding: 22px 30px;
+    border-radius: 20px; box-shadow: 0 6px 16px rgba(30,64,175,0.12); display: none;
+  }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 10px;
+  }
+  @media (max-width: 420px) {
+    .tabuleiro { grid-template-columns: repeat(10, 28px); grid-template-rows: repeat(10, 28px); }
+    .letra { width: 28px; height: 28px; font-size: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🔍 Caça-Palavras dos Animais</h1>
+<p class="instrucoes">Clique na primeira letra e depois na última letra de uma palavra escondida (na horizontal ou vertical).</p>
+
+<div class="cartao-nivel" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — tabuleiro menor, 4 palavras</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — 6 palavras</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — tabuleiro maior, 10 palavras</small></button>
+  </div>
+</div>
+
+<div class="conteudo escondido" id="telaJogo">
+  <div class="tabuleiro" id="tabuleiro"></div>
+  <div class="lista-palavras">
+    <h3>Encontre:</h3>
+    <ul id="listaPalavras"></ul>
+  </div>
+</div>
+
+<div class="mensagem-vitoria" id="mensagemVitoria">
+  <h2>🎉 Você encontrou todas as palavras!</h2>
+  <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+</div>
+
+<script>
+  var NIVEIS = {
+    facil: { tamanho: 8, palavras: ["GATO", "URSO", "LEAO", "COBRA"] },
+    medio: { tamanho: 10, palavras: ["GATO", "CACHORRO", "LEAO", "TIGRE", "URSO", "COBRA"] },
+    dificil: { tamanho: 13, palavras: ["GATO", "CACHORRO", "LEAO", "TIGRE", "URSO", "COBRA", "ELEFANTE", "GIRAFA", "MACACO", "CAVALO"] }
+  };
+  var nivelEscolhido = "medio";
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+  var TAMANHO = 10;
+  var PALAVRAS = NIVEIS.medio.palavras;
+  var LETRAS_ALEATORIAS = "ABCDEFGHIJLMNOPQRSTUVXZ";
+
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var listaPalavrasEl = document.getElementById("listaPalavras");
+  var mensagemVitoria = document.getElementById("mensagemVitoria");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var grade = [];
+  var palavrasEncontradas = [];
+  var primeiraSelecao = null;
+
+  function criarGradeVazia() {
+    var g = [];
+    for (var l = 0; l < TAMANHO; l++) {
+      var linha = [];
+      for (var c = 0; c < TAMANHO; c++) linha.push(null);
+      g.push(linha);
+    }
+    return g;
+  }
+
+  function cabe(palavra, linha, coluna, horizontal) {
+    for (var i = 0; i < palavra.length; i++) {
+      var l = horizontal ? linha : linha + i;
+      var c = horizontal ? coluna + i : coluna;
+      if (l >= TAMANHO || c >= TAMANHO) return false;
+      var atual = grade[l][c];
+      if (atual !== null && atual !== palavra[i]) return false;
+    }
+    return true;
+  }
+
+  function colocarPalavra(palavra) {
+    var tentativas = 0;
+    while (tentativas < 300) {
+      tentativas++;
+      var horizontal = Math.random() < 0.5;
+      var linha = Math.floor(Math.random() * TAMANHO);
+      var coluna = Math.floor(Math.random() * TAMANHO);
+
+      if (cabe(palavra, linha, coluna, horizontal)) {
+        var celulas = [];
+        for (var i = 0; i < palavra.length; i++) {
+          var l = horizontal ? linha : linha + i;
+          var c = horizontal ? coluna + i : coluna;
+          grade[l][c] = palavra[i];
+          celulas.push(l + "," + c);
+        }
+        return celulas;
+      }
+    }
+    return null; // não deveria acontecer com esse conjunto de palavras
+  }
+
+  function montarJogo(nivel) {
+    if (nivel) {
+      nivelEscolhido = nivel;
+      document.getElementById("telaNivel").classList.add("escondido");
+      document.getElementById("telaJogo").classList.remove("escondido");
+    }
+    TAMANHO = NIVEIS[nivelEscolhido].tamanho;
+    PALAVRAS = NIVEIS[nivelEscolhido].palavras;
+
+    grade = criarGradeVazia();
+    palavrasEncontradas = [];
+    primeiraSelecao = null;
+
+    var posicoesPalavras = {};
+    PALAVRAS.forEach(function (palavra) {
+      posicoesPalavras[palavra] = colocarPalavra(palavra);
+    });
+
+    for (var l = 0; l < TAMANHO; l++) {
+      for (var c = 0; c < TAMANHO; c++) {
+        if (grade[l][c] === null) {
+          grade[l][c] = LETRAS_ALEATORIAS[Math.floor(Math.random() * LETRAS_ALEATORIAS.length)];
+        }
+      }
+    }
+
+    renderizarTabuleiro();
+    renderizarListaPalavras();
+    mensagemVitoria.style.display = "none";
+  }
+
+  function calcularTamanhoCelula() {
+    // se adapta ao tamanho da tela e ao TAMANHO do tabuleiro, pra nunca estourar a largura
+    var larguraDisponivel = Math.min(window.innerWidth - 40, 380);
+    var celula = Math.floor((larguraDisponivel - TAMANHO * 3) / TAMANHO);
+    return Math.max(20, Math.min(34, celula));
+  }
+
+  function renderizarTabuleiro() {
+    var tamanhoCelula = calcularTamanhoCelula();
+    tabuleiroEl.style.gridTemplateColumns = "repeat(" + TAMANHO + ", " + tamanhoCelula + "px)";
+    tabuleiroEl.style.gridTemplateRows = "repeat(" + TAMANHO + ", " + tamanhoCelula + "px)";
+
+    tabuleiroEl.innerHTML = "";
+    for (var l = 0; l < TAMANHO; l++) {
+      for (var c = 0; c < TAMANHO; c++) {
+        var div = document.createElement("div");
+        div.className = "letra";
+        div.style.width = tamanhoCelula + "px";
+        div.style.height = tamanhoCelula + "px";
+        div.style.fontSize = Math.max(12, Math.round(tamanhoCelula * 0.42)) + "px";
+        div.textContent = grade[l][c];
+        div.dataset.linha = l;
+        div.dataset.coluna = c;
+        div.addEventListener("click", function (evento) { aoClicarLetra(evento.currentTarget); });
+        tabuleiroEl.appendChild(div);
+      }
+    }
+  }
+
+  function renderizarListaPalavras() {
+    listaPalavrasEl.innerHTML = "";
+    embaralhar(PALAVRAS).forEach(function (palavra) {
+      var li = document.createElement("li");
+      li.textContent = palavra;
+      li.dataset.palavra = palavra;
+      listaPalavrasEl.appendChild(li);
+    });
+  }
+
+  function pegarCelula(linha, coluna) {
+    return tabuleiroEl.querySelector('.letra[data-linha="' + linha + '"][data-coluna="' + coluna + '"]');
+  }
+
+  function aoClicarLetra(celula) {
+    if (celula.classList.contains("encontrada")) return;
+
+    if (primeiraSelecao === null) {
+      primeiraSelecao = celula;
+      celula.classList.add("selecionada");
+      return;
+    }
+
+    if (primeiraSelecao === celula) {
+      celula.classList.remove("selecionada");
+      primeiraSelecao = null;
+      return;
+    }
+
+    var l1 = Number(primeiraSelecao.dataset.linha), c1 = Number(primeiraSelecao.dataset.coluna);
+    var l2 = Number(celula.dataset.linha), c2 = Number(celula.dataset.coluna);
+
+    var candidatas = [];
+    if (l1 === l2) {
+      var inicio = Math.min(c1, c2), fim = Math.max(c1, c2);
+      for (var c = inicio; c <= fim; c++) candidatas.push(pegarCelula(l1, c));
+    } else if (c1 === c2) {
+      var inicioL = Math.min(l1, l2), fimL = Math.max(l1, l2);
+      for (var l = inicioL; l <= fimL; l++) candidatas.push(pegarCelula(l, c1));
+    }
+
+    primeiraSelecao.classList.remove("selecionada");
+
+    if (candidatas.length > 0) {
+      var textoDireto = candidatas.map(function (el) { return el.textContent; }).join("");
+      var textoInverso = textoDireto.split("").reverse().join("");
+      var palavraEncontrada = PALAVRAS.indexOf(textoDireto) !== -1
+        ? textoDireto
+        : (PALAVRAS.indexOf(textoInverso) !== -1 ? textoInverso : null);
+
+      if (palavraEncontrada && palavrasEncontradas.indexOf(palavraEncontrada) === -1) {
+        candidatas.forEach(function (el) { el.classList.add("encontrada"); });
+        palavrasEncontradas.push(palavraEncontrada);
+        var itemLista = listaPalavrasEl.querySelector('[data-palavra="' + palavraEncontrada + '"]');
+        if (itemLista) itemLista.classList.add("encontrada");
+
+        if (palavrasEncontradas.length === PALAVRAS.length) {
+          mensagemVitoria.style.display = "block";
+        }
+      }
+    }
+
+    primeiraSelecao = null;
+  }
+
+  btnJogarNovamente.addEventListener("click", function () { montarJogo(); });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { montarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

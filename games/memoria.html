@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogo da Memória</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .tela-jogo { display: flex; flex-direction: column; align-items: center; }
+  .escondido { display: none !important; }
+
+  .dificuldades { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .btn-dificuldade {
+    background: white; border: none; border-radius: 16px; padding: 18px 26px;
+    font-weight: 800; font-size: 1.1rem; color: var(--azul); cursor: pointer;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+  }
+  .btn-dificuldade:hover { background: #dbeafe; }
+  .btn-dificuldade small { display: block; font-weight: 400; color: #64748b; font-size: 0.75rem; margin-top: 4px; }
+
+  .painel {
+    display: flex; gap: 22px; font-weight: 700;
+    background: white; padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 18px;
+  }
+
+  .tabuleiro {
+    display: grid;
+    gap: 10px;
+    justify-content: center;
+  }
+  .carta {
+    width: 74px; height: 74px;
+    border-radius: 14px;
+    background: var(--roxo);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    user-select: none;
+  }
+  .carta.virada { background: white; }
+  .carta.encontrada { background: var(--verde); cursor: default; }
+
+  .mensagem-vitoria {
+    margin-top: 20px; text-align: center; background: white; padding: 22px 30px;
+    border-radius: 20px; box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+  }
+  .mensagem-vitoria h2 { margin: 0 0 10px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🧠 Jogo da Memória</h1>
+<p class="instrucoes">Vire duas cartas por vez e encontre todos os pares!</p>
+
+<div id="telaDificuldade" class="dificuldades">
+  <button class="btn-dificuldade" data-pares="6">🟢 Fácil<br><small>1º ao 3º ano — 6 pares</small></button>
+  <button class="btn-dificuldade" data-pares="8">🟡 Médio<br><small>4º ao 6º ano — 8 pares</small></button>
+  <button class="btn-dificuldade" data-pares="10">🔴 Difícil<br><small>7º ao 9º ano — 10 pares</small></button>
+</div>
+
+<div id="telaJogo" class="tela-jogo escondido">
+  <div class="painel">
+    <span>🔁 Tentativas: <span id="tentativas">0</span></span>
+    <span>⏱️ Tempo: <span id="tempo">0s</span></span>
+  </div>
+  <div class="tabuleiro" id="tabuleiro"></div>
+</div>
+
+<div id="telaVitoria" class="escondido mensagem-vitoria">
+  <h2>🎉 Você encontrou todos os pares!</h2>
+  <p id="resumoVitoria"></p>
+  <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+</div>
+
+<script>
+  var EMOJIS = ["🐶","🐱","🐵","🦁","🐸","🐷","🐰","🦊","🐼","🐨"];
+
+  var telaDificuldade = document.getElementById("telaDificuldade");
+  var telaJogo = document.getElementById("telaJogo");
+  var telaVitoria = document.getElementById("telaVitoria");
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var tentativasEl = document.getElementById("tentativas");
+  var tempoEl = document.getElementById("tempo");
+  var resumoVitoria = document.getElementById("resumoVitoria");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var cartasViradas = [];
+  var travado = false;
+  var tentativas = 0;
+  var paresEncontrados = 0;
+  var totalPares = 0;
+  var cronometro = null;
+  var segundosPassados = 0;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function definirColunas(totalCartas) {
+    if (totalCartas <= 12) return 4;
+    if (totalCartas <= 16) return 4;
+    return 5;
+  }
+
+  function iniciarJogo(pares) {
+    totalPares = pares;
+    var simbolos = EMOJIS.slice(0, pares);
+    var baralho = embaralhar(simbolos.concat(simbolos));
+
+    tentativas = 0;
+    paresEncontrados = 0;
+    cartasViradas = [];
+    travado = false;
+    segundosPassados = 0;
+    tentativasEl.textContent = "0";
+    tempoEl.textContent = "0s";
+
+    tabuleiroEl.innerHTML = "";
+    tabuleiroEl.style.gridTemplateColumns = "repeat(" + definirColunas(baralho.length) + ", 74px)";
+
+    baralho.forEach(function (simbolo, indice) {
+      var carta = document.createElement("div");
+      carta.className = "carta";
+      carta.dataset.simbolo = simbolo;
+      carta.dataset.indice = indice;
+      carta.addEventListener("click", function () { aoClicarCarta(carta); });
+      tabuleiroEl.appendChild(carta);
+    });
+
+    telaDificuldade.classList.add("escondido");
+    telaVitoria.classList.add("escondido");
+    telaJogo.classList.remove("escondido");
+
+    if (cronometro) clearInterval(cronometro);
+    cronometro = setInterval(function () {
+      segundosPassados++;
+      tempoEl.textContent = segundosPassados + "s";
+    }, 1000);
+  }
+
+  function aoClicarCarta(carta) {
+    if (travado) return;
+    if (carta.classList.contains("virada") || carta.classList.contains("encontrada")) return;
+    if (cartasViradas.indexOf(carta) !== -1) return;
+
+    revelarCarta(carta);
+    cartasViradas.push(carta);
+
+    if (cartasViradas.length === 2) {
+      travado = true;
+      tentativas++;
+      tentativasEl.textContent = tentativas;
+
+      var a = cartasViradas[0], b = cartasViradas[1];
+      if (a.dataset.simbolo === b.dataset.simbolo) {
+        setTimeout(function () {
+          a.classList.add("encontrada");
+          b.classList.add("encontrada");
+          cartasViradas = [];
+          travado = false;
+          paresEncontrados++;
+          if (paresEncontrados === totalPares) {
+            finalizarJogo();
+          }
+        }, 400);
+      } else {
+        setTimeout(function () {
+          esconderCarta(a);
+          esconderCarta(b);
+          cartasViradas = [];
+          travado = false;
+        }, 800);
+      }
+    }
+  }
+
+  function revelarCarta(carta) {
+    carta.classList.add("virada");
+    carta.textContent = carta.dataset.simbolo;
+  }
+
+  function esconderCarta(carta) {
+    carta.classList.remove("virada");
+    carta.textContent = "";
+  }
+
+  function finalizarJogo() {
+    clearInterval(cronometro);
+    telaJogo.classList.add("escondido");
+    telaVitoria.classList.remove("escondido");
+    resumoVitoria.textContent = "Tentativas: " + tentativas + " • Tempo: " + segundosPassados + "s";
+  }
+
+  var botoesDificuldade = telaDificuldade.querySelectorAll(".btn-dificuldade");
+  botoesDificuldade.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      iniciarJogo(Number(btn.dataset.pares));
+    });
+  });
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaVitoria.classList.add("escondido");
+    telaDificuldade.classList.remove("escondido");
+  });
+</script>
+</body>
+</html>

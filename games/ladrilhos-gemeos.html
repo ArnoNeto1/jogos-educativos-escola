@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ladrilhos Gêmeos</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 12px; font-size: 0.95rem; }
+  .escondido { display: none !important; }
+  .btn-nivel {
+    background: white; border: none; border-radius: 12px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 14px 22px; cursor: pointer; text-align: left; width: 100%; max-width: 320px; margin-bottom: 10px; display: block;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.78rem; }
+  #telaNivel { display: flex; flex-direction: column; align-items: center; }
+
+  .painel {
+    display: flex; gap: 18px; font-weight: 700; flex-wrap: wrap; justify-content: center;
+    background: white; padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 14px;
+  }
+  .painel button {
+    border: none; background: var(--roxo); color: white; font-weight: 700;
+    padding: 6px 14px; border-radius: 999px; cursor: pointer; font-size: 0.85rem;
+  }
+
+  .tabuleiro {
+    display: grid; gap: 6px; background: white; padding: 14px; border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(30,64,175,0.12);
+  }
+  .ladrilho {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; background: #eef2ff; border-radius: 10px; cursor: pointer;
+    aspect-ratio: 1; user-select: none; border: 3px solid transparent;
+    transition: transform 0.12s;
+  }
+  .ladrilho:hover { transform: scale(1.05); }
+  .ladrilho.selecionado { border-color: var(--azul); background: #dbeafe; }
+  .ladrilho.vazio { visibility: hidden; cursor: default; }
+  .ladrilho.vazio:hover { transform: none; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+    display: none; align-items: center; justify-content: center; z-index: 20;
+  }
+  .overlay.mostrar { display: flex; }
+  .caixa {
+    background: white; border-radius: 16px; padding: 28px 34px; text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 320px;
+  }
+  .caixa h2 { margin-top: 0; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+  .dica { font-size: 0.8rem; color: #64748b; margin-top: 10px; text-align: center; max-width: 420px; }
+  .caminho-svg { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 15; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🀄 Ladrilhos Gêmeos</h1>
+<p class="instrucoes">Encontre e conecte dois ladrilhos iguais! O caminho entre eles só pode ter até 2 curvas.</p>
+
+<div id="telaNivel">
+  <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — tabuleiro pequeno, 8 pares</small></button>
+  <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — tabuleiro médio, 18 pares</small></button>
+  <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — tabuleiro grande, 32 pares</small></button>
+</div>
+
+<div id="jogoWrapper" class="escondido">
+  <div class="painel">
+    <span>🧩 Pares: <span id="paresRestantes">0</span></span>
+    <span>👆 Tentativas: <span id="tentativas">0</span></span>
+    <button id="btnEmbaralhar">🔀 Embaralhar restantes</button>
+    <button id="btnMudarNivel">↩️ Trocar nível</button>
+  </div>
+  <div class="tabuleiro" id="tabuleiro"></div>
+  <p class="dica">💡 Clique em um ladrilho e depois no seu par. Se não houver um caminho válido (no máx. 2 curvas), tente outro par ou embaralhe.</p>
+</div>
+
+<svg class="caminho-svg" id="svgCaminho" width="1" height="1"></svg>
+
+<div class="overlay" id="overlay">
+  <div class="caixa">
+    <h2>🎉 Você encontrou todos os pares!</h2>
+    <p id="resumoFinal"></p>
+    <button class="acao" id="btnReiniciar">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+  var TEMAS = ["🐶","🐱","🐰","🦊","🐼","🐸","🐵","🦁","🐯","🐮","🐷","🐔","🦄","🐙","🦋","🐞",
+               "🍎","🍌","🍇","🍓","🍉","🍒","🍍","🥝","🌟","🎈","⚽","🎵","🚗","✈️","🌈","☀️"];
+
+  var NIVEIS = {
+    facil: { linhas: 4, colunas: 4 },
+    medio: { linhas: 6, colunas: 6 },
+    dificil: { linhas: 8, colunas: 8 }
+  };
+
+  var LINHAS, COLUNAS, LINHAS_INTERNAS, COLUNAS_INTERNAS;
+  var grade; // grade[linha][coluna] = simbolo ou null (com borda de 1 célula vazia ao redor)
+  var selecionado = null;
+  var paresRestantes = 0, tentativas = 0;
+  var nivelAtual = "medio";
+
+  var telaNivel = document.getElementById("telaNivel");
+  var jogoWrapper = document.getElementById("jogoWrapper");
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var paresRestantesEl = document.getElementById("paresRestantes");
+  var tentativasEl = document.getElementById("tentativas");
+  var overlay = document.getElementById("overlay");
+  var resumoFinal = document.getElementById("resumoFinal");
+  var svgCaminho = document.getElementById("svgCaminho");
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = copia[i]; copia[i] = copia[j]; copia[j] = tmp;
+    }
+    return copia;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelAtual = nivel;
+    var config = NIVEIS[nivelAtual];
+    LINHAS = config.linhas; COLUNAS = config.colunas;
+    LINHAS_INTERNAS = LINHAS + 2; COLUNAS_INTERNAS = COLUNAS + 2;
+
+    var totalCelulas = LINHAS * COLUNAS;
+    var totalPares = totalCelulas / 2;
+    var simbolosEscolhidos = embaralhar(TEMAS).slice(0, totalPares);
+    var baralho = embaralhar(simbolosEscolhidos.concat(simbolosEscolhidos));
+
+    grade = [];
+    for (var l = 0; l < LINHAS_INTERNAS; l++) {
+      var linha = [];
+      for (var c = 0; c < COLUNAS_INTERNAS; c++) {
+        if (l === 0 || c === 0 || l === LINHAS_INTERNAS - 1 || c === COLUNAS_INTERNAS - 1) {
+          linha.push(null); // borda, sempre livre pro caminho
+        } else {
+          linha.push(baralho[(l - 1) * COLUNAS + (c - 1)]);
+        }
+      }
+      grade.push(linha);
+    }
+
+    paresRestantes = totalPares;
+    tentativas = 0;
+    selecionado = null;
+    paresRestantesEl.textContent = paresRestantes;
+    tentativasEl.textContent = tentativas;
+
+    telaNivel.classList.add("escondido");
+    jogoWrapper.classList.remove("escondido");
+    overlay.classList.remove("mostrar");
+
+    renderizarTabuleiro();
+  }
+
+  function renderizarTabuleiro() {
+    tabuleiroEl.style.gridTemplateColumns = "repeat(" + COLUNAS + ", minmax(32px, 56px))";
+    tabuleiroEl.innerHTML = "";
+    for (var l = 1; l <= LINHAS; l++) {
+      for (var c = 1; c <= COLUNAS; c++) {
+        var simbolo = grade[l][c];
+        var div = document.createElement("div");
+        div.className = "ladrilho" + (simbolo === null ? " vazio" : "");
+        div.textContent = simbolo || "";
+        div.dataset.linha = l;
+        div.dataset.coluna = c;
+        if (simbolo !== null) {
+          div.addEventListener("click", (function (linha, coluna) {
+            return function () { clicarLadrilho(linha, coluna); };
+          })(l, c));
+        }
+        tabuleiroEl.appendChild(div);
+      }
+    }
+  }
+
+  function celulaLivre(l, c) {
+    return grade[l][c] === null;
+  }
+
+  // verifica se o segmento reto entre (l1,c1) e (l2,c2) (mesma linha ou mesma coluna) está livre,
+  // sem contar as próprias extremidades
+  function segmentoLivre(l1, c1, l2, c2) {
+    if (l1 === l2) {
+      var inicio = Math.min(c1, c2), fim = Math.max(c1, c2);
+      for (var c = inicio + 1; c < fim; c++) {
+        if (!celulaLivre(l1, c)) return false;
+      }
+      return true;
+    }
+    if (c1 === c2) {
+      var inicioL = Math.min(l1, l2), fimL = Math.max(l1, l2);
+      for (var l = inicioL + 1; l < fimL; l++) {
+        if (!celulaLivre(l, c1)) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // procura um caminho entre dois pontos com no máximo 2 curvas (0, 1 ou 2 dobras),
+  // tratando as próprias extremidades como livres (mesmo que ocupadas pelos símbolos clicados)
+  function existeCaminho(l1, c1, l2, c2) {
+    // 0 curvas: mesma linha ou coluna, segmento livre
+    if (l1 === l2 && segmentoLivre(l1, c1, l2, c2)) return true;
+    if (c1 === c2 && segmentoLivre(l1, c1, l2, c2)) return true;
+
+    // 1 curva: usando o ponto de canto (l1,c2) ou (l2,c1)
+    if (celulaLivre(l1, c2) && segmentoLivre(l1, c1, l1, c2) && segmentoLivre(l1, c2, l2, c2)) return true;
+    if (celulaLivre(l2, c1) && segmentoLivre(l1, c1, l2, c1) && segmentoLivre(l2, c1, l2, c2)) return true;
+
+    // 2 curvas: percorre todas as linhas/colunas intermediárias possíveis como "trilho" externo
+    for (var l = 0; l < LINHAS_INTERNAS; l++) {
+      if (l === l1 || l === l2) continue;
+      if (!celulaLivre(l, c1) || !celulaLivre(l, c2)) continue;
+      if (segmentoLivre(l1, c1, l, c1) && segmentoLivre(l, c1, l, c2) && segmentoLivre(l, c2, l2, c2)) return true;
+    }
+    for (var c = 0; c < COLUNAS_INTERNAS; c++) {
+      if (c === c1 || c === c2) continue;
+      if (!celulaLivre(l1, c) || !celulaLivre(l2, c)) continue;
+      if (segmentoLivre(l1, c1, l1, c) && segmentoLivre(l1, c, l2, c) && segmentoLivre(l2, c, l2, c2)) return true;
+    }
+    return false;
+  }
+
+  function clicarLadrilho(l, c) {
+    var div = tabuleiroEl.querySelector('[data-linha="' + l + '"][data-coluna="' + c + '"]');
+    if (!selecionado) {
+      selecionado = { l: l, c: c, div: div };
+      div.classList.add("selecionado");
+      return;
+    }
+    if (selecionado.l === l && selecionado.c === c) {
+      div.classList.remove("selecionado");
+      selecionado = null;
+      return;
+    }
+
+    tentativas++;
+    tentativasEl.textContent = tentativas;
+
+    var simboloA = grade[selecionado.l][selecionado.c];
+    var simboloB = grade[l][c];
+
+    if (simboloA === simboloB && existeCaminho(selecionado.l, selecionado.c, l, c)) {
+      grade[selecionado.l][selecionado.c] = null;
+      grade[l][c] = null;
+      selecionado.div.classList.remove("selecionado");
+      selecionado.div.classList.add("vazio");
+      selecionado.div.textContent = "";
+      div.classList.add("vazio");
+      div.textContent = "";
+      selecionado = null;
+      paresRestantes--;
+      paresRestantesEl.textContent = paresRestantes;
+      if (paresRestantes === 0) {
+        setTimeout(function () {
+          resumoFinal.textContent = "Nível " + nivelAtual + " • " + tentativas + " tentativas.";
+          overlay.classList.add("mostrar");
+        }, 200);
+      }
+    } else {
+      // feedback rápido de erro: pisca vermelho e desmarca
+      div.style.background = "#fecaca";
+      selecionado.div.style.background = "#fecaca";
+      var alvoA = selecionado.div, alvoB = div;
+      selecionado.div.classList.remove("selecionado");
+      selecionado = null;
+      setTimeout(function () {
+        alvoA.style.background = "";
+        alvoB.style.background = "";
+      }, 350);
+    }
+  }
+
+  function existeParDisponivel() {
+    var celulas = [];
+    for (var l = 1; l <= LINHAS; l++) {
+      for (var c = 1; c <= COLUNAS; c++) {
+        if (grade[l][c] !== null) celulas.push({ l: l, c: c, s: grade[l][c] });
+      }
+    }
+    for (var i = 0; i < celulas.length; i++) {
+      for (var j = i + 1; j < celulas.length; j++) {
+        if (celulas[i].s === celulas[j].s && existeCaminho(celulas[i].l, celulas[i].c, celulas[j].l, celulas[j].c)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function embaralharRestantes() {
+    var simbolosRestantes = [];
+    var posicoes = [];
+    for (var l = 1; l <= LINHAS; l++) {
+      for (var c = 1; c <= COLUNAS; c++) {
+        if (grade[l][c] !== null) { simbolosRestantes.push(grade[l][c]); posicoes.push({ l: l, c: c }); }
+      }
+    }
+    var tentativasEmbaralhar = 0;
+    do {
+      simbolosRestantes = embaralhar(simbolosRestantes);
+      tentativasEmbaralhar++;
+    } while (tentativasEmbaralhar < 30 && !testeEmbaralhamentoTemPar(posicoes, simbolosRestantes));
+
+    posicoes.forEach(function (pos, indice) {
+      grade[pos.l][pos.c] = simbolosRestantes[indice];
+    });
+    selecionado = null;
+    renderizarTabuleiro();
+  }
+
+  function testeEmbaralhamentoTemPar(posicoes, simbolos) {
+    var backup = [];
+    for (var i = 0; i < posicoes.length; i++) backup.push(grade[posicoes[i].l][posicoes[i].c]);
+    posicoes.forEach(function (pos, indice) { grade[pos.l][pos.c] = simbolos[indice]; });
+    var tem = existeParDisponivel();
+    posicoes.forEach(function (pos, indice) { grade[pos.l][pos.c] = backup[indice]; });
+    return tem;
+  }
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+  document.getElementById("btnEmbaralhar").addEventListener("click", embaralharRestantes);
+  document.getElementById("btnMudarNivel").addEventListener("click", function () {
+    jogoWrapper.classList.add("escondido");
+    telaNivel.classList.remove("escondido");
+  });
+  document.getElementById("btnReiniciar").addEventListener("click", function () {
+    overlay.classList.remove("mostrar");
+    jogoWrapper.classList.add("escondido");
+    telaNivel.classList.remove("escondido");
+  });
+</script>
+</body>
+</html>

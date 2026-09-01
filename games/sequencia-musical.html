@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sequência Musical</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#7c3aed; --verde:#22c55e; --vermelho:#ef4444; --amarelo:#eab308; --fundo:#1e1b4b; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: linear-gradient(160deg, #1e1b4b, #312e81);
+    color: white;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--roxo);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #c7d2fe; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+
+  .cartao {
+    background: white; color: #1e293b; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    width: 100%; max-width: 420px; text-align: center;
+  }
+  .btn-nivel {
+    background: #f5f3ff; border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; width: 100%; margin-bottom: 12px; display: block;
+  }
+  .btn-nivel:hover { background: #ede9fe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+
+  .painel {
+    display: flex; gap: 22px; font-weight: 700; justify-content: center;
+    background: rgba(255,255,255,0.1); padding: 10px 22px; border-radius: 999px; margin-bottom: 18px;
+  }
+  .status-jogo { font-size: 1.2rem; font-weight: 700; min-height: 1.6em; margin-bottom: 16px; text-align: center; }
+
+  .tabuleiro {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    width: 280px; margin: 0 auto;
+  }
+  .tabuleiro.pads5 { grid-template-columns: repeat(3, 1fr); width: 340px; }
+  .pad {
+    height: 100px; border: none; border-radius: 16px; cursor: pointer;
+    filter: brightness(0.65); transition: filter 0.1s;
+  }
+  .pad.aceso { filter: brightness(1.3); box-shadow: 0 0 24px currentColor; }
+  .pad:disabled { cursor: default; }
+  .pad-vermelho { background: var(--vermelho); color: var(--vermelho); }
+  .pad-azul { background: var(--azul); color: var(--azul); }
+  .pad-verde { background: var(--verde); color: var(--verde); }
+  .pad-amarelo { background: var(--amarelo); color: var(--amarelo); }
+  .pad-roxo { background: var(--roxo); color: var(--roxo); }
+
+  button.acao {
+    background: var(--roxo); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 16px;
+  }
+  .recorde { color: #7c3aed; font-weight: 700; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🎵 Sequência Musical</h1>
+<p class="instrucoes">Preste atenção na sequência de sons e cores, depois repita clicando na mesma ordem!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — 4 cores, ritmo devagar</small></button>
+  <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — 4 cores, ritmo normal</small></button>
+  <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — 5 cores, ritmo rápido</small></button>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+  <div class="painel">
+    <span>🏆 Sequência: <span id="tamanhoSequencia">0</span></span>
+  </div>
+  <div class="status-jogo" id="statusJogo"></div>
+  <div class="tabuleiro" id="tabuleiro"></div>
+  <div class="recorde" id="recordeTexto"></div>
+  <button class="acao escondido" id="btnJogarNovamente">🔄 Jogar novamente</button>
+</div>
+
+<script>
+  var NIVEIS = {
+    facil: { pads: ["vermelho", "azul", "verde", "amarelo"], velocidadeMs: 800, pausaMs: 350 },
+    medio: { pads: ["vermelho", "azul", "verde", "amarelo"], velocidadeMs: 550, pausaMs: 220 },
+    dificil: { pads: ["vermelho", "azul", "verde", "amarelo", "roxo"], velocidadeMs: 380, pausaMs: 150 }
+  };
+  var FREQUENCIAS = { vermelho: 261.6, azul: 329.6, verde: 392.0, amarelo: 493.9, roxo: 587.3 }; // dó-mi-sol-si-ré (arpejo)
+  var CHAVE_RECORDE = "sequenciaMusical_recorde_";
+
+  var nivelEscolhido = "medio";
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var statusJogoEl = document.getElementById("statusJogo");
+  var tamanhoSequenciaEl = document.getElementById("tamanhoSequencia");
+  var recordeTextoEl = document.getElementById("recordeTexto");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var sequencia = [];
+  var passoDoJogador = 0;
+  var aceitandoCliques = false;
+  var audioCtx = null;
+
+  function iniciarAudio() {
+    if (audioCtx) return;
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { /* sem suporte a áudio: sem problema, só fica sem som */ }
+  }
+
+  function tocarNota(cor, duracaoMs) {
+    if (!audioCtx) return;
+    var osc = audioCtx.createOscillator();
+    var ganho = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = FREQUENCIAS[cor];
+    var duracaoSeg = duracaoMs / 1000;
+    ganho.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    ganho.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 0.02);
+    ganho.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duracaoSeg);
+    osc.connect(ganho); ganho.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + duracaoSeg + 0.05);
+  }
+
+  function tocarSomErro() {
+    if (!audioCtx) return;
+    var osc = audioCtx.createOscillator();
+    var ganho = audioCtx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.4);
+    ganho.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    ganho.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.connect(ganho); ganho.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.45);
+  }
+
+  function lerRecorde() {
+    try { return Number(localStorage.getItem(CHAVE_RECORDE + nivelEscolhido)) || 0; } catch (e) { return 0; }
+  }
+  function salvarRecorde(valor) {
+    try { localStorage.setItem(CHAVE_RECORDE + nivelEscolhido, String(valor)); } catch (e) { /* sem localStorage: sem problema */ }
+  }
+
+  function construirTabuleiro() {
+    var config = NIVEIS[nivelEscolhido];
+    tabuleiroEl.innerHTML = "";
+    tabuleiroEl.className = "tabuleiro" + (config.pads.length === 5 ? " pads5" : "");
+    config.pads.forEach(function (cor) {
+      var btn = document.createElement("button");
+      btn.className = "pad pad-" + cor;
+      btn.dataset.cor = cor;
+      btn.disabled = true;
+      btn.addEventListener("click", function () { aoClicarPad(cor, btn); });
+      tabuleiroEl.appendChild(btn);
+    });
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    iniciarAudio();
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    btnJogarNovamente.classList.add("escondido");
+    sequencia = [];
+    tamanhoSequenciaEl.textContent = "0";
+    recordeTextoEl.textContent = "🏅 Recorde neste nível: " + lerRecorde();
+    construirTabuleiro();
+    proximaRodada();
+  }
+
+  function proximaRodada() {
+    var config = NIVEIS[nivelEscolhido];
+    sequencia.push(config.pads[Math.floor(Math.random() * config.pads.length)]);
+    tamanhoSequenciaEl.textContent = String(sequencia.length);
+    passoDoJogador = 0;
+    reproduzirSequencia();
+  }
+
+  function reproduzirSequencia() {
+    aceitandoCliques = false;
+    statusJogoEl.textContent = "👀 Observe...";
+    setPadsHabilitados(false);
+    var config = NIVEIS[nivelEscolhido];
+
+    var i = 0;
+    function passo() {
+      if (i >= sequencia.length) {
+        statusJogoEl.textContent = "🖱️ Sua vez! Repita a sequência.";
+        setPadsHabilitados(true);
+        aceitandoCliques = true;
+        return;
+      }
+      acenderPad(sequencia[i], config.velocidadeMs);
+      i++;
+      setTimeout(passo, config.velocidadeMs + config.pausaMs);
+    }
+    setTimeout(passo, 400);
+  }
+
+  function acenderPad(cor, duracaoMs) {
+    var pad = tabuleiroEl.querySelector('[data-cor="' + cor + '"]');
+    if (!pad) return;
+    pad.classList.add("aceso");
+    tocarNota(cor, duracaoMs);
+    setTimeout(function () { pad.classList.remove("aceso"); }, duracaoMs);
+  }
+
+  function setPadsHabilitados(habilitado) {
+    tabuleiroEl.querySelectorAll(".pad").forEach(function (p) { p.disabled = !habilitado; });
+  }
+
+  function aoClicarPad(cor, botao) {
+    if (!aceitandoCliques) return;
+    var config = NIVEIS[nivelEscolhido];
+    botao.classList.add("aceso");
+    tocarNota(cor, 200);
+    setTimeout(function () { botao.classList.remove("aceso"); }, 200);
+
+    if (cor === sequencia[passoDoJogador]) {
+      passoDoJogador++;
+      if (passoDoJogador === sequencia.length) {
+        aceitandoCliques = false;
+        setPadsHabilitados(false);
+        statusJogoEl.textContent = "✅ Isso aí!";
+        setTimeout(proximaRodada, 700);
+      }
+    } else {
+      aceitandoCliques = false;
+      setPadsHabilitados(false);
+      tocarSomErro();
+      finalizarJogo();
+    }
+  }
+
+  function finalizarJogo() {
+    var pontuacaoFinal = sequencia.length - 1;
+    var recordeAtual = lerRecorde();
+    var bateuRecorde = pontuacaoFinal > recordeAtual;
+    if (bateuRecorde) salvarRecorde(pontuacaoFinal);
+
+    statusJogoEl.textContent = "😅 Ops! Você chegou a uma sequência de " + pontuacaoFinal + ".";
+    recordeTextoEl.textContent = bateuRecorde
+      ? "🎉 Novo recorde neste nível: " + pontuacaoFinal + "!"
+      : "🏅 Recorde neste nível: " + recordeAtual;
+    btnJogarNovamente.classList.remove("escondido");
+  }
+
+  btnJogarNovamente.addEventListener("click", function () { iniciarJogo(); });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

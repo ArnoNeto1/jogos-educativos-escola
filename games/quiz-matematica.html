@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Somar e Subtrair</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 20px; font-size: 1rem; }
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 440px; text-align: center;
+  }
+  .escondido { display: none !important; }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+  .pergunta { font-size: 2.4rem; font-weight: 800; color: var(--azul); margin-bottom: 8px; }
+  .feedback { min-height: 1.6em; font-weight: 700; margin-bottom: 14px; }
+  .feedback.certo { color: var(--verde); }
+  .feedback.errado { color: var(--vermelho); }
+  .alternativas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alt-btn {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.4rem; font-weight: 800; color: #1e293b;
+    padding: 16px 0; cursor: pointer;
+  }
+  .alt-btn:hover:not(:disabled) { background: #dbeafe; }
+  .alt-btn:disabled { cursor: default; }
+  .alt-btn.certa { background: var(--verde); color: white; }
+  .alt-btn.errada { background: var(--vermelho); color: white; }
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--azul); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>➕ Somar e Subtrair ➖</h1>
+<p class="instrucoes">Responda 10 continhas de soma e subtração. Boa sorte!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — contas até 10</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — contas até 20</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — contas até 100</small></button>
+  </div>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+
+  <div id="telaQuiz">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="pergunta" id="pergunta"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="alternativas" id="alternativas"></div>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+
+</div>
+
+<script>
+  var TOTAL_PERGUNTAS = 10;
+
+  var telaQuiz = document.getElementById("telaQuiz");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var perguntaEl = document.getElementById("pergunta");
+  var feedbackEl = document.getElementById("feedback");
+  var alternativasEl = document.getElementById("alternativas");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var perguntas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  var NIVEIS = { facil: { limite: 10 }, medio: { limite: 20 }, dificil: { limite: 100 } };
+  var nivelEscolhido = "medio";
+
+  function gerarPergunta(limite) {
+    var operacao = Math.random() < 0.5 ? "+" : "-";
+
+    if (operacao === "+") {
+      var a = Math.floor(Math.random() * (limite - 1)) + 1;      // 1 a limite-1
+      var b = Math.floor(Math.random() * (limite - a)) + 1;      // garante soma <= limite
+      return { a: a, b: b, operacao: "+", resposta: a + b };
+    } else {
+      var maior = Math.floor(Math.random() * (limite - 1)) + 2;        // 2 a limite
+      var menor = Math.floor(Math.random() * (maior - 1)) + 1; // 1 até (maior-1), evita resultado 0 ficar raro mas permite
+      return { a: maior, b: menor, operacao: "-", resposta: maior - menor };
+    }
+  }
+
+  function gerarPerguntas() {
+    var limite = NIVEIS[nivelEscolhido].limite;
+    var lista = [];
+    for (var i = 0; i < TOTAL_PERGUNTAS; i++) {
+      lista.push(gerarPergunta(limite));
+    }
+    return lista;
+  }
+
+  function gerarAlternativas(respostaCorreta) {
+    var opcoes = [respostaCorreta];
+    var tentativas = 0;
+    while (opcoes.length < 4 && tentativas < 200) {
+      tentativas++;
+      var variacao = Math.floor(Math.random() * 10) - 5; // -5 a +4
+      var candidata = respostaCorreta + variacao;
+      if (candidata < 0) continue;
+      if (opcoes.indexOf(candidata) !== -1) continue;
+      opcoes.push(candidata);
+    }
+    return embaralhar(opcoes);
+  }
+
+  function iniciarQuiz(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    perguntas = gerarPerguntas();
+    indiceAtual = 0;
+    acertos = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaQuiz.classList.remove("escondido");
+    mostrarPergunta();
+  }
+
+  function mostrarPergunta() {
+    var p = perguntas[indiceAtual];
+    progressoEl.textContent = "Pergunta " + (indiceAtual + 1) + " de " + perguntas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    perguntaEl.textContent = p.a + " " + p.operacao + " " + p.b + " = ?";
+    feedbackEl.textContent = "";
+    feedbackEl.className = "feedback";
+
+    var opcoes = gerarAlternativas(p.resposta);
+    alternativasEl.innerHTML = "";
+    opcoes.forEach(function (opcao) {
+      var btn = document.createElement("button");
+      btn.className = "alt-btn";
+      btn.textContent = opcao;
+      btn.addEventListener("click", function () { responder(opcao, p.resposta, btn); });
+      alternativasEl.appendChild(btn);
+    });
+  }
+
+  function responder(escolhida, correta, botaoClicado) {
+    var botoes = alternativasEl.querySelectorAll(".alt-btn");
+    botoes.forEach(function (b) { b.disabled = true; });
+
+    if (escolhida === correta) {
+      acertos++;
+      botaoClicado.classList.add("certa");
+      feedbackEl.textContent = "✅ Certo!";
+      feedbackEl.className = "feedback certo";
+    } else {
+      botaoClicado.classList.add("errada");
+      botoes.forEach(function (b) {
+        if (Number(b.textContent) === correta) b.classList.add("certa");
+      });
+      feedbackEl.textContent = "❌ Quase! A resposta certa era " + correta;
+      feedbackEl.className = "feedback errado";
+    }
+
+    setTimeout(function () {
+      indiceAtual++;
+      if (indiceAtual < perguntas.length) {
+        mostrarPergunta();
+      } else {
+        mostrarResultado();
+      }
+    }, 1100);
+  }
+
+  function mostrarResultado() {
+    telaQuiz.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / perguntas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + perguntas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🏆 Excelente!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem!";
+    else resultadoTitulo.textContent = "💪 Continue praticando!";
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarQuiz(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

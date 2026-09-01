@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4 em Linha</title>
+<style>
+  :root { --azul:#2563eb; --amarelo:#facc15; --vermelho:#ef4444; --verde:#22c55e; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 14px; font-size: 0.95rem; }
+  .escondido { display: none !important; }
+
+  .cartao-config {
+    background: white; border-radius: 20px; padding: 26px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 420px; text-align: center;
+  }
+  .cartao-config h2 { margin: 0 0 16px; font-size: 1.2rem; }
+  .opcoes-config { display: flex; flex-direction: column; gap: 12px; }
+  .btn-config {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px;
+  }
+  .btn-config:hover { background: #dbeafe; }
+  .btn-config .emoji { font-size: 1.4rem; }
+  .btn-config small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .btn-voltar-config { margin-top: 14px; background: none; border: none; color: var(--azul); font-weight: 700; cursor: pointer; }
+
+  .info-modo { font-weight: 700; color: #6d28d9; margin-bottom: 10px; text-align: center; font-size: 0.95rem; }
+  .status { font-weight: 700; font-size: 1.15rem; min-height: 1.6em; margin-bottom: 14px; text-align: center; }
+
+  .tabuleiro {
+    display: inline-grid; grid-template-columns: repeat(7, 48px); grid-template-rows: repeat(6, 48px);
+    gap: 6px; background: var(--azul); padding: 10px; border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(30,64,175,0.25);
+  }
+  .celula {
+    width: 48px; height: 48px; border-radius: 50%; background: white; border: none; cursor: pointer;
+  }
+  .celula.vermelho { background: var(--vermelho); }
+  .celula.amarelo { background: var(--amarelo); }
+  .coluna-hover:hover .celula.vazia { background: #dbeafe; }
+
+  .controles { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer;
+  }
+  button.secundario {
+    background: white; color: var(--azul); border: 2px solid var(--azul); font-weight: 700; font-size: 1rem;
+    padding: 10px 22px; border-radius: 999px; cursor: pointer;
+  }
+  @media (max-width: 400px) {
+    .tabuleiro { grid-template-columns: repeat(7, 38px); grid-template-rows: repeat(6, 38px); }
+    .celula { width: 38px; height: 38px; }
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🔴 4 em Linha 🟡</h1>
+<p class="instrucoes">Clique numa coluna pra soltar sua peça. Quem formar 4 seguidas (na linha, coluna ou diagonal) vence!</p>
+
+<div id="telaConfigModo" class="cartao-config">
+  <h2>Como você quer jogar?</h2>
+  <div class="opcoes-config">
+    <button class="btn-config" id="btnDoisJogadores">
+      <span class="emoji">🧑‍🤝‍🧑</span>
+      <span>Dois jogadores<br><small>No mesmo aparelho, um de cada vez</small></span>
+    </button>
+    <button class="btn-config" id="btnContraComputador">
+      <span class="emoji">🤖</span>
+      <span>Contra o computador<br><small>Você joga com as peças vermelhas</small></span>
+    </button>
+  </div>
+</div>
+
+<div id="telaConfigDificuldade" class="cartao-config escondido">
+  <h2>Escolha o nível</h2>
+  <div class="opcoes-config">
+    <button class="btn-config" data-dificuldade="facil">
+      <span class="emoji">🟢</span>
+      <span>Fácil (1º ao 3º ano)<br><small style="font-weight:400; color:#64748b;">O computador joga ao acaso</small></span>
+    </button>
+    <button class="btn-config" data-dificuldade="medio">
+      <span class="emoji">🟡</span>
+      <span>Médio (4º ao 6º ano)<br><small style="font-weight:400; color:#64748b;">Ataca e bloqueia, mas pensa pouco à frente</small></span>
+    </button>
+    <button class="btn-config" data-dificuldade="dificil">
+      <span class="emoji">🔴</span>
+      <span>Difícil (7º ao 9º ano)<br><small style="font-weight:400; color:#64748b;">Pensa várias jogadas à frente</small></span>
+    </button>
+  </div>
+  <button class="btn-voltar-config" id="btnVoltarModo">⬅ Voltar</button>
+</div>
+
+<div id="areaJogo" class="escondido">
+  <div class="info-modo" id="infoModo"></div>
+  <div class="status" id="status"></div>
+  <div class="tabuleiro" id="tabuleiro"></div>
+  <div class="controles">
+    <button class="acao" id="btnReiniciar">🔄 Novo jogo</button>
+    <button class="secundario" id="btnTrocarModo">⚙️ Trocar modo</button>
+  </div>
+</div>
+
+<script>
+  var COLUNAS = 7, LINHAS = 6;
+  var telaConfigModo = document.getElementById("telaConfigModo");
+  var telaConfigDificuldade = document.getElementById("telaConfigDificuldade");
+  var areaJogo = document.getElementById("areaJogo");
+  var infoModoEl = document.getElementById("infoModo");
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var statusEl = document.getElementById("status");
+
+  var tabuleiro; // tabuleiro[linha][coluna] = null | "vermelho" | "amarelo"
+  var jogadorAtual, jogoAcabou, computadorPensando;
+  var modoJogo = "dois-jogadores"; // "dois-jogadores" | "computador"
+  var dificuldadeComputador = "medio";
+  var NOMES_DIFICULDADE = { facil: "Fácil 🟢", medio: "Médio 🟡", dificil: "Difícil 🔴" };
+
+  function corOposta(cor) { return cor === "vermelho" ? "amarelo" : "vermelho"; }
+  function nomeJogador(cor) { return cor === "vermelho" ? "🔴 Vermelho" : "🟡 Amarelo"; }
+  function corDoComputador() { return "amarelo"; } // o aluno sempre joga de vermelho
+
+  function tabuleiroVazio() {
+    var t = [];
+    for (var l = 0; l < LINHAS; l++) { var linha = []; for (var c = 0; c < COLUNAS; c++) linha.push(null); t.push(linha); }
+    return t;
+  }
+
+  function clonarTabuleiro(t) { return t.map(function (linha) { return linha.slice(); }); }
+
+  function colunaCheia(t, c) { return t[0][c] !== null; }
+
+  function linhaDeQueda(t, c) {
+    for (var l = LINHAS - 1; l >= 0; l--) { if (t[l][c] === null) return l; }
+    return -1;
+  }
+
+  function colunasJogaveis(t) {
+    var lista = [];
+    for (var c = 0; c < COLUNAS; c++) if (!colunaCheia(t, c)) lista.push(c);
+    return lista;
+  }
+
+  // confere se colocar em (l, c) fecha 4 em linha da cor "cor"
+  function verificaVitoriaEm(t, l, c, cor) {
+    var direcoes = [[0, 1], [1, 0], [1, 1], [1, -1]];
+    for (var i = 0; i < direcoes.length; i++) {
+      var dl = direcoes[i][0], dc = direcoes[i][1];
+      var total = 1;
+      total += contarSequencia(t, l, c, dl, dc, cor);
+      total += contarSequencia(t, l, c, -dl, -dc, cor);
+      if (total >= 4) return true;
+    }
+    return false;
+  }
+
+  function contarSequencia(t, l, c, dl, dc, cor) {
+    var total = 0, nl = l + dl, nc = c + dc;
+    while (nl >= 0 && nl < LINHAS && nc >= 0 && nc < COLUNAS && t[nl][nc] === cor) {
+      total++; nl += dl; nc += dc;
+    }
+    return total;
+  }
+
+  function tabuleiroCheio(t) { return colunasJogaveis(t).length === 0; }
+
+  // ---------- Motor do computador (negamax com poda alfa-beta) ----------
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  // avalia uma "janela" de 4 células do ponto de vista de "cor"
+  function avaliarJanela(celulas, cor) {
+    var adversaria = corOposta(cor);
+    var minhas = 0, inimigas = 0, vazias = 0;
+    celulas.forEach(function (v) {
+      if (v === cor) minhas++;
+      else if (v === adversaria) inimigas++;
+      else vazias++;
+    });
+    if (minhas > 0 && inimigas > 0) return 0; // janela já bloqueada, não vale nada
+    if (minhas === 4) return 100000;
+    if (minhas === 3 && vazias === 1) return 50;
+    if (minhas === 2 && vazias === 2) return 10;
+    if (inimigas === 3 && vazias === 1) return -60; // ameaça do adversário pesa mais (defesa prioritária)
+    if (inimigas === 2 && vazias === 2) return -8;
+    return 0;
+  }
+
+  function avaliarTabuleiro(t, cor) {
+    var pontuacao = 0;
+    // preferência pela coluna central
+    for (var l = 0; l < LINHAS; l++) if (t[l][Math.floor(COLUNAS / 2)] === cor) pontuacao += 6;
+
+    var linhas = [];
+    // horizontais
+    for (var l2 = 0; l2 < LINHAS; l2++) for (var c = 0; c <= COLUNAS - 4; c++) linhas.push([t[l2][c], t[l2][c+1], t[l2][c+2], t[l2][c+3]]);
+    // verticais
+    for (var c2 = 0; c2 < COLUNAS; c2++) for (var l3 = 0; l3 <= LINHAS - 4; l3++) linhas.push([t[l3][c2], t[l3+1][c2], t[l3+2][c2], t[l3+3][c2]]);
+    // diagonais \
+    for (var l4 = 0; l4 <= LINHAS - 4; l4++) for (var c4 = 0; c4 <= COLUNAS - 4; c4++) linhas.push([t[l4][c4], t[l4+1][c4+1], t[l4+2][c4+2], t[l4+3][c4+3]]);
+    // diagonais /
+    for (var l5 = 0; l5 <= LINHAS - 4; l5++) for (var c5 = 0; c5 <= COLUNAS - 4; c5++) linhas.push([t[l5+3][c5], t[l5+2][c5+1], t[l5+1][c5+2], t[l5][c5+3]]);
+
+    linhas.forEach(function (janela) { pontuacao += avaliarJanela(janela, cor); });
+    return pontuacao;
+  }
+
+  function negamax(t, profundidade, alpha, beta, cor) {
+    var jogaveis = colunasJogaveis(t);
+    if (jogaveis.length === 0) return 0;
+    if (profundidade === 0) return avaliarTabuleiro(t, cor);
+
+    var melhor = -Infinity;
+    for (var i = 0; i < jogaveis.length; i++) {
+      var c = jogaveis[i];
+      var l = linhaDeQueda(t, c);
+      var copia = clonarTabuleiro(t);
+      copia[l][c] = cor;
+      var valor;
+      if (verificaVitoriaEm(copia, l, c, cor)) {
+        valor = 100000 + profundidade; // vitória mais rápida vale mais
+      } else {
+        valor = -negamax(copia, profundidade - 1, -beta, -alpha, corOposta(cor));
+      }
+      if (valor > melhor) melhor = valor;
+      if (melhor > alpha) alpha = melhor;
+      if (alpha >= beta) break;
+    }
+    return melhor;
+  }
+
+  function escolherColunaComputador(t, cor, dificuldade) {
+    var jogaveis = embaralhar(colunasJogaveis(t));
+    if (jogaveis.length === 0) return null;
+
+    if (dificuldade === "facil") {
+      return jogaveis[Math.floor(Math.random() * jogaveis.length)];
+    }
+
+    // vitória imediata ou bloqueio imediato (usado por médio e difícil)
+    var adversaria = corOposta(cor);
+    for (var i = 0; i < jogaveis.length; i++) {
+      var l = linhaDeQueda(t, jogaveis[i]);
+      var copia = clonarTabuleiro(t); copia[l][jogaveis[i]] = cor;
+      if (verificaVitoriaEm(copia, l, jogaveis[i], cor)) return jogaveis[i];
+    }
+    for (var j = 0; j < jogaveis.length; j++) {
+      var l2 = linhaDeQueda(t, jogaveis[j]);
+      var copia2 = clonarTabuleiro(t); copia2[l2][jogaveis[j]] = adversaria;
+      if (verificaVitoriaEm(copia2, l2, jogaveis[j], adversaria)) return jogaveis[j];
+    }
+
+    if (dificuldade === "medio") {
+      // sem busca profunda: prefere colunas centrais com um pouco de aleatoriedade
+      var pontuadas = jogaveis.map(function (c) {
+        var l = linhaDeQueda(t, c);
+        var copia = clonarTabuleiro(t); copia[l][c] = cor;
+        return { coluna: c, valor: avaliarTabuleiro(copia, cor) + Math.random() * 15 };
+      });
+      pontuadas.sort(function (a, b) { return b.valor - a.valor; });
+      return pontuadas[0].coluna;
+    }
+
+    // difícil: negamax com poda alfa-beta
+    var profundidade = 5;
+    var melhorColuna = jogaveis[0], melhorValor = -Infinity;
+    jogaveis.forEach(function (c) {
+      var l = linhaDeQueda(t, c);
+      var copia = clonarTabuleiro(t); copia[l][c] = cor;
+      var valor = -negamax(copia, profundidade - 1, -Infinity, Infinity, adversaria);
+      if (valor > melhorValor) { melhorValor = valor; melhorColuna = c; }
+    });
+    return melhorColuna;
+  }
+
+  function agendarJogadaComputador() {
+    computadorPensando = true;
+    statusEl.textContent = "🤖 Computador pensando...";
+    setTimeout(function () {
+      computadorPensando = false;
+      if (jogoAcabou) return;
+      var coluna = escolherColunaComputador(tabuleiro, corDoComputador(), dificuldadeComputador);
+      if (coluna !== null) jogarNaColuna(coluna);
+    }, 500);
+  }
+
+  // ---------- Jogo ----------
+
+  function iniciarJogo() {
+    tabuleiro = tabuleiroVazio();
+    jogadorAtual = "vermelho";
+    jogoAcabou = false;
+    computadorPensando = false;
+    atualizarInfoModo();
+    statusEl.textContent = "Vez de: " + nomeJogador(jogadorAtual);
+    renderizarTabuleiro();
+  }
+
+  function atualizarInfoModo() {
+    if (modoJogo === "computador") {
+      infoModoEl.textContent = "🤖 Você (🔴 Vermelho) vs Computador — " + NOMES_DIFICULDADE[dificuldadeComputador];
+    } else {
+      infoModoEl.textContent = "🧑‍🤝‍🧑 Dois jogadores no mesmo aparelho";
+    }
+  }
+
+  function jogarNaColuna(coluna) {
+    if (jogoAcabou || computadorPensando) return;
+    var linha = linhaDeQueda(tabuleiro, coluna);
+    if (linha === -1) return;
+
+    tabuleiro[linha][coluna] = jogadorAtual;
+    renderizarTabuleiro();
+
+    if (verificaVitoriaEm(tabuleiro, linha, coluna, jogadorAtual)) {
+      jogoAcabou = true;
+      statusEl.textContent = "🏆 " + nomeJogador(jogadorAtual) + " venceu!";
+      return;
+    }
+    if (tabuleiroCheio(tabuleiro)) {
+      jogoAcabou = true;
+      statusEl.textContent = "🤝 Empate! O tabuleiro encheu.";
+      return;
+    }
+
+    jogadorAtual = corOposta(jogadorAtual);
+    statusEl.textContent = "Vez de: " + nomeJogador(jogadorAtual);
+
+    if (modoJogo === "computador" && jogadorAtual === corDoComputador()) {
+      agendarJogadaComputador();
+    }
+  }
+
+  function renderizarTabuleiro() {
+    tabuleiroEl.innerHTML = "";
+    for (var c = 0; c < COLUNAS; c++) {
+      (function (coluna) {
+        for (var l = 0; l < LINHAS; l++) {
+          var celula = document.createElement("button");
+          var cor = tabuleiro[l][coluna];
+          celula.className = "celula " + (cor || "vazia");
+          celula.addEventListener("click", function () { jogarNaColuna(coluna); });
+          tabuleiroEl.appendChild(celula);
+        }
+      })(c);
+    }
+  }
+
+  // ---------- Configuração / fluxo de telas ----------
+
+  function mostrarConfigModo() {
+    areaJogo.classList.add("escondido");
+    telaConfigDificuldade.classList.add("escondido");
+    telaConfigModo.classList.remove("escondido");
+  }
+
+  document.getElementById("btnDoisJogadores").addEventListener("click", function () {
+    modoJogo = "dois-jogadores";
+    telaConfigModo.classList.add("escondido");
+    areaJogo.classList.remove("escondido");
+    iniciarJogo();
+  });
+
+  document.getElementById("btnContraComputador").addEventListener("click", function () {
+    telaConfigModo.classList.add("escondido");
+    telaConfigDificuldade.classList.remove("escondido");
+  });
+
+  document.getElementById("btnVoltarModo").addEventListener("click", mostrarConfigModo);
+
+  telaConfigDificuldade.querySelectorAll("[data-dificuldade]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      dificuldadeComputador = btn.dataset.dificuldade;
+      modoJogo = "computador";
+      telaConfigDificuldade.classList.add("escondido");
+      areaJogo.classList.remove("escondido");
+      iniciarJogo();
+    });
+  });
+
+  document.getElementById("btnTrocarModo").addEventListener("click", mostrarConfigModo);
+  document.getElementById("btnReiniciar").addEventListener("click", iniciarJogo);
+</script>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piloto Espacial</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 12px; font-size: 0.95rem; }
+  .btn-nivel {
+    background: white; border: none; border-radius: 12px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 14px 22px; cursor: pointer; text-align: left; width: 100%; max-width: 300px; margin-bottom: 10px; display: block;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.78rem; }
+
+  .painel {
+    display: flex; gap: 18px; font-weight: 700; flex-wrap: wrap; justify-content: center;
+    background: white; padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 14px;
+  }
+  .painel .recorde { color: #d97706; }
+  .area-jogo { position: relative; }
+  canvas {
+    background: radial-gradient(circle at 50% 0%, #1e1b4b, #020617);
+    border-radius: 16px; box-shadow: 0 6px 20px rgba(30,64,175,0.18);
+    touch-action: none; display: block;
+  }
+  .overlay {
+    position: absolute; inset: 0; background: rgba(2,6,23,0.92);
+    border-radius: 16px; color: white; display: none;
+    flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px;
+  }
+  .overlay.mostrar { display: flex; }
+  .overlay h2 { margin: 0; font-size: 1.5rem; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+  .dica { font-size: 0.8rem; color: #64748b; margin-top: 8px; text-align: center; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🚀 Piloto Espacial</h1>
+<p class="instrucoes">Desvie dos meteoros e atire pra destruí-los! Sobreviva o máximo que conseguir.</p>
+
+<div class="painel">
+  <span>⭐ Pontos: <span id="pontuacao">0</span></span>
+  <span>❤️ Vidas: <span id="vidas">3</span></span>
+  <span class="recorde">🏆 Recorde: <span id="recorde">0</span></span>
+</div>
+
+<div class="area-jogo">
+  <canvas id="canvas" width="420" height="560"></canvas>
+  <div class="overlay mostrar" id="telaNivel">
+    <h2>Escolha o nível</h2>
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — meteoros lentos e raros</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — ritmo padrão</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — meteoros rápidos e frequentes</small></button>
+  </div>
+  <div class="overlay" id="overlay">
+    <h2 id="overlayTitulo">Fim de jogo!</h2>
+    <p id="overlayResumo"></p>
+    <button class="acao" id="btnReiniciar">🔄 Jogar novamente</button>
+  </div>
+</div>
+<p class="dica">💡 Setas ⬅️➡️ pra mover, espaço pra atirar. No celular: arraste e toque no canvas pra atirar.</p>
+
+<script>
+  var CANVAS_W = 420, CANVAS_H = 560;
+  var CHAVE_RECORDE = "pilotoEspacial_recorde";
+
+  var NIVEIS = {
+    facil: { velocidadeMeteoro: [1.2, 2.2], intervaloSpawn: 1100, velocidadeNave: 6 },
+    medio: { velocidadeMeteoro: [2, 3.6], intervaloSpawn: 800, velocidadeNave: 6.5 },
+    dificil: { velocidadeMeteoro: [3, 5.5], intervaloSpawn: 550, velocidadeNave: 7 }
+  };
+  var nivelEscolhido = "medio";
+
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+  var pontuacaoEl = document.getElementById("pontuacao");
+  var vidasEl = document.getElementById("vidas");
+  var recordeEl = document.getElementById("recorde");
+  var overlay = document.getElementById("overlay");
+  var overlayTitulo = document.getElementById("overlayTitulo");
+  var overlayResumo = document.getElementById("overlayResumo");
+  var btnReiniciar = document.getElementById("btnReiniciar");
+
+  var NAVE_LARGURA = 34, NAVE_ALTURA = 30, NAVE_Y = CANVAS_H - 50;
+  var naveX;
+  var meteoros = [], tiros = [];
+  var pontuacao, vidas, recorde, jogoAcabou;
+  var tempoDesdeUltimoSpawn, tempoDesdeUltimoTiro;
+  var idAnimacao, ultimoTimestamp;
+  var invencivelAte; // timestamp até quando a nave fica invencível após ser atingida
+
+  function lerRecorde() {
+    try { return Number(localStorage.getItem(CHAVE_RECORDE)) || 0; } catch (e) { return 0; }
+  }
+  function salvarRecorde(v) {
+    try { localStorage.setItem(CHAVE_RECORDE, String(v)); } catch (e) { /* sem localStorage: sem problema */ }
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    document.getElementById("telaNivel").classList.remove("mostrar");
+    overlay.classList.remove("mostrar");
+
+    naveX = CANVAS_W / 2 - NAVE_LARGURA / 2;
+    meteoros = [];
+    tiros = [];
+    pontuacao = 0;
+    vidas = 3;
+    jogoAcabou = false;
+    invencivelAte = 0;
+    tempoDesdeUltimoSpawn = 0;
+    tempoDesdeUltimoTiro = 0;
+    recorde = lerRecorde();
+
+    pontuacaoEl.textContent = "0";
+    vidasEl.textContent = "3";
+    recordeEl.textContent = recorde;
+
+    if (idAnimacao) cancelAnimationFrame(idAnimacao);
+    ultimoTimestamp = null;
+    idAnimacao = requestAnimationFrame(laco);
+  }
+
+  function laco(timestamp) {
+    if (ultimoTimestamp === null) ultimoTimestamp = timestamp;
+    var deltaMs = Math.min(timestamp - ultimoTimestamp, 40);
+    var dt = deltaMs / 16.67;
+    ultimoTimestamp = timestamp;
+
+    if (!jogoAcabou) atualizar(dt, deltaMs, timestamp);
+    desenhar(timestamp);
+
+    idAnimacao = requestAnimationFrame(laco);
+  }
+
+  function atualizar(dt, deltaMs, timestamp) {
+    var config = NIVEIS[nivelEscolhido];
+
+    // movimento da nave por teclado
+    if (teclaEsquerda) naveX -= config.velocidadeNave * dt;
+    if (teclaDireita) naveX += config.velocidadeNave * dt;
+    naveX = Math.max(0, Math.min(CANVAS_W - NAVE_LARGURA, naveX));
+
+    // criação de meteoros
+    tempoDesdeUltimoSpawn += deltaMs;
+    if (tempoDesdeUltimoSpawn >= config.intervaloSpawn) {
+      tempoDesdeUltimoSpawn = 0;
+      criarMeteoro(config);
+    }
+
+    // tiro automático por espaço/toque, com cadência
+    tempoDesdeUltimoTiro += deltaMs;
+    if (atirando && tempoDesdeUltimoTiro >= 260) {
+      tempoDesdeUltimoTiro = 0;
+      tiros.push({ x: naveX + NAVE_LARGURA / 2 - 2, y: NAVE_Y, raio: 4 });
+    }
+
+    // move tiros
+    for (var i = tiros.length - 1; i >= 0; i--) {
+      tiros[i].y -= 9 * dt;
+      if (tiros[i].y < -10) tiros.splice(i, 1);
+    }
+
+    // move meteoros e checa colisão com a nave
+    for (var m = meteoros.length - 1; m >= 0; m--) {
+      var meteoro = meteoros[m];
+      meteoro.y += meteoro.velocidade * dt;
+      meteoro.angulo += meteoro.rotacao * dt;
+
+      if (meteoro.y - meteoro.raio > CANVAS_H) {
+        meteoros.splice(m, 1);
+        continue;
+      }
+
+      // colisão meteoro x tiro
+      var atingido = false;
+      for (var t = tiros.length - 1; t >= 0; t--) {
+        var dx = tiros[t].x - meteoro.x, dy = tiros[t].y - meteoro.y;
+        if (Math.sqrt(dx * dx + dy * dy) < meteoro.raio + tiros[t].raio) {
+          tiros.splice(t, 1);
+          atingido = true;
+          break;
+        }
+      }
+      if (atingido) {
+        meteoros.splice(m, 1);
+        pontuacao += 15;
+        pontuacaoEl.textContent = pontuacao;
+        continue;
+      }
+
+      // colisão meteoro x nave
+      if (timestamp > invencivelAte) {
+        var naveCx = naveX + NAVE_LARGURA / 2, naveCy = NAVE_Y + NAVE_ALTURA / 2;
+        var ddx = naveCx - meteoro.x, ddy = naveCy - meteoro.y;
+        if (Math.sqrt(ddx * ddx + ddy * ddy) < meteoro.raio + NAVE_LARGURA / 2.6) {
+          meteoros.splice(m, 1);
+          vidas--;
+          vidasEl.textContent = vidas;
+          invencivelAte = timestamp + 1500;
+          if (vidas <= 0) {
+            finalizarJogo();
+            return;
+          }
+        }
+      }
+    }
+
+    // pontos por sobrevivência
+    pontuacao += dt * 0.15;
+    pontuacaoEl.textContent = Math.floor(pontuacao);
+  }
+
+  function criarMeteoro(config) {
+    var raio = 14 + Math.random() * 16;
+    meteoros.push({
+      x: raio + Math.random() * (CANVAS_W - raio * 2),
+      y: -raio,
+      raio: raio,
+      velocidade: config.velocidadeMeteoro[0] + Math.random() * (config.velocidadeMeteoro[1] - config.velocidadeMeteoro[0]),
+      angulo: 0,
+      rotacao: (Math.random() - 0.5) * 0.05
+    });
+  }
+
+  function finalizarJogo() {
+    jogoAcabou = true;
+    var pontosFinais = Math.floor(pontuacao);
+    var bateuRecorde = pontosFinais > recorde;
+    if (bateuRecorde) { recorde = pontosFinais; salvarRecorde(recorde); recordeEl.textContent = recorde; }
+
+    overlayTitulo.textContent = "💥 A nave foi atingida!";
+    overlayResumo.textContent = "Pontos: " + pontosFinais + (bateuRecorde ? " • 🎉 Novo recorde!" : "");
+    overlay.classList.add("mostrar");
+  }
+
+  function desenhar(timestamp) {
+    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // estrelas de fundo (fixas por semente simples baseada no índice)
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    for (var s = 0; s < 40; s++) {
+      var sx = (s * 53) % CANVAS_W;
+      var sy = (s * 97 + Math.floor((timestamp || 0) / 50)) % CANVAS_H;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+
+    // meteoros
+    ctx.fillStyle = "#a8a29e";
+    meteoros.forEach(function (m) {
+      ctx.save();
+      ctx.translate(m.x, m.y);
+      ctx.rotate(m.angulo);
+      ctx.beginPath();
+      for (var a = 0; a < 8; a++) {
+        var ang = (a / 8) * Math.PI * 2;
+        var r = m.raio * (0.8 + (a % 2 === 0 ? 0.2 : 0));
+        var px = Math.cos(ang) * r, py = Math.sin(ang) * r;
+        if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // tiros
+    ctx.fillStyle = "#facc15";
+    tiros.forEach(function (t) {
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.raio, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // nave (pisca se invencível)
+    var piscando = timestamp < invencivelAte && Math.floor(timestamp / 100) % 2 === 0;
+    if (!piscando) {
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath();
+      ctx.moveTo(naveX + NAVE_LARGURA / 2, NAVE_Y);
+      ctx.lineTo(naveX + NAVE_LARGURA, NAVE_Y + NAVE_ALTURA);
+      ctx.lineTo(naveX, NAVE_Y + NAVE_ALTURA);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.moveTo(naveX + NAVE_LARGURA / 2 - 6, NAVE_Y + NAVE_ALTURA);
+      ctx.lineTo(naveX + NAVE_LARGURA / 2 + 6, NAVE_Y + NAVE_ALTURA);
+      ctx.lineTo(naveX + NAVE_LARGURA / 2, NAVE_Y + NAVE_ALTURA + 12);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  var teclaEsquerda = false, teclaDireita = false, atirando = false;
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") teclaEsquerda = true;
+    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") teclaDireita = true;
+    if (e.key === " ") { atirando = true; e.preventDefault(); }
+  });
+  document.addEventListener("keyup", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") teclaEsquerda = false;
+    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") teclaDireita = false;
+    if (e.key === " ") atirando = false;
+  });
+
+  canvas.addEventListener("mousedown", function () { atirando = true; });
+  canvas.addEventListener("mouseup", function () { atirando = false; });
+  canvas.addEventListener("mousemove", function (e) {
+    var retangulo = canvas.getBoundingClientRect();
+    var escala = CANVAS_W / retangulo.width;
+    naveX = (e.clientX - retangulo.left) * escala - NAVE_LARGURA / 2;
+  });
+  canvas.addEventListener("touchstart", function (e) { atirando = true; }, { passive: true });
+  canvas.addEventListener("touchend", function (e) { atirando = false; }, { passive: true });
+  canvas.addEventListener("touchmove", function (e) {
+    e.preventDefault();
+    var retangulo = canvas.getBoundingClientRect();
+    var escala = CANVAS_W / retangulo.width;
+    var toque = e.touches[0];
+    naveX = (toque.clientX - retangulo.left) * escala - NAVE_LARGURA / 2;
+  }, { passive: false });
+
+  btnReiniciar.addEventListener("click", function () {
+    overlay.classList.remove("mostrar");
+    document.getElementById("telaNivel").classList.add("mostrar");
+    if (idAnimacao) cancelAnimationFrame(idAnimacao);
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+
+  desenhar(0);
+</script>
+</body>
+</html>

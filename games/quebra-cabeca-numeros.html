@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quebra-Cabeça Deslizante</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 16px; font-size: 1rem; }
+  .escondido { display: none !important; }
+
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 420px; text-align: center;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left; width: 100%; margin-bottom: 12px; display: block;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+
+  .painel {
+    display: flex; gap: 22px; font-weight: 700; justify-content: center;
+    background: white; padding: 10px 22px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 18px;
+  }
+  .tabuleiro {
+    display: grid; gap: 6px; margin: 0 auto; justify-content: center;
+    background: #cbd5e1; padding: 6px; border-radius: 16px;
+  }
+  .peca {
+    width: 76px; height: 76px; border: none; border-radius: 10px;
+    background: var(--azul); color: white; font-size: 1.8rem; font-weight: 800;
+    cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  }
+  .peca:hover { filter: brightness(1.1); }
+  .peca.vazia { background: transparent; box-shadow: none; cursor: default; }
+  .tabuleiro.tamanho4 .peca { width: 62px; height: 62px; font-size: 1.4rem; }
+
+  .mensagem-vitoria {
+    margin-top: 16px; text-align: center; background: white; padding: 22px 30px;
+    border-radius: 20px; box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+  }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+  button.secundario {
+    background: none; border: none; color: #64748b; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; margin-top: 10px; text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🧩 Quebra-Cabeça Deslizante</h1>
+<p class="instrucoes">Clique numa peça vizinha do espaço vazio pra deslizá-la, até colocar todos os números em ordem!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — tabuleiro 3×3, pouco embaralhado</small></button>
+  <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — tabuleiro 3×3, bem embaralhado</small></button>
+  <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — tabuleiro 4×4</small></button>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+  <div class="painel">
+    <span>🔁 Movimentos: <span id="movimentos">0</span></span>
+  </div>
+  <div class="tabuleiro" id="tabuleiro"></div>
+  <button class="secundario" id="btnEmbaralharDeNovo">🔀 Embaralhar de novo</button>
+
+  <div class="mensagem-vitoria escondido" id="telaVitoria">
+    <h2>🎉 Resolveu o quebra-cabeça!</h2>
+    <p id="resumoVitoria"></p>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+</div>
+
+<script>
+  var NIVEIS = {
+    facil: { tamanho: 3, embaralhamentos: 20 },
+    medio: { tamanho: 3, embaralhamentos: 80 },
+    dificil: { tamanho: 4, embaralhamentos: 150 }
+  };
+  var nivelEscolhido = "medio";
+
+  var tabuleiroEl = document.getElementById("tabuleiro");
+  var movimentosEl = document.getElementById("movimentos");
+  var telaVitoria = document.getElementById("telaVitoria");
+  var resumoVitoria = document.getElementById("resumoVitoria");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+  var btnEmbaralharDeNovo = document.getElementById("btnEmbaralharDeNovo");
+
+  var tamanho = 3;
+  var pecas = []; // array de tamanho*tamanho, valores 1..(tamanho²-1) e 0 pro espaço vazio
+  var movimentos = 0;
+  var resolvido = false;
+
+  function estadoResolvido(n) {
+    var arr = [];
+    for (var i = 1; i < n * n; i++) arr.push(i);
+    arr.push(0);
+    return arr;
+  }
+
+  function indiceVazio() {
+    return pecas.indexOf(0);
+  }
+
+  function saoVizinhas(i1, i2, n) {
+    var l1 = Math.floor(i1 / n), c1 = i1 % n;
+    var l2 = Math.floor(i2 / n), c2 = i2 % n;
+    return (l1 === l2 && Math.abs(c1 - c2) === 1) || (c1 === c2 && Math.abs(l1 - l2) === 1);
+  }
+
+  // embaralha fazendo movimentos válidos aleatórios a partir do estado resolvido — isso
+  // GARANTE que o quebra-cabeça continua solucionável (embaralhar com permutação totalmente
+  // aleatória deixaria metade dos casos impossíveis de resolver).
+  function embaralharValido(n, quantidadeMovimentos) {
+    pecas = estadoResolvido(n);
+    var ultimoVazio = -1;
+    for (var i = 0; i < quantidadeMovimentos; i++) {
+      var vazio = indiceVazio();
+      var vizinhos = [];
+      for (var j = 0; j < pecas.length; j++) {
+        if (j !== ultimoVazio && saoVizinhas(vazio, j, n)) vizinhos.push(j);
+      }
+      if (vizinhos.length === 0) continue;
+      var escolhido = vizinhos[Math.floor(Math.random() * vizinhos.length)];
+      var temp = pecas[vazio]; pecas[vazio] = pecas[escolhido]; pecas[escolhido] = temp;
+      ultimoVazio = vazio;
+    }
+  }
+
+  function estaResolvido() {
+    var alvo = estadoResolvido(tamanho);
+    for (var i = 0; i < pecas.length; i++) if (pecas[i] !== alvo[i]) return false;
+    return true;
+  }
+
+  function iniciarJogo(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var config = NIVEIS[nivelEscolhido];
+    tamanho = config.tamanho;
+    movimentos = 0;
+    resolvido = false;
+    movimentosEl.textContent = "0";
+    telaVitoria.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+
+    embaralharValido(tamanho, config.embaralhamentos);
+    renderizarTabuleiro();
+  }
+
+  function renderizarTabuleiro() {
+    tabuleiroEl.className = "tabuleiro" + (tamanho === 4 ? " tamanho4" : "");
+    tabuleiroEl.style.gridTemplateColumns = "repeat(" + tamanho + ", auto)";
+    tabuleiroEl.innerHTML = "";
+    pecas.forEach(function (valor, indice) {
+      var btn = document.createElement("button");
+      if (valor === 0) {
+        btn.className = "peca vazia";
+      } else {
+        btn.className = "peca";
+        btn.textContent = valor;
+        btn.addEventListener("click", function () { tentarMover(indice); });
+      }
+      tabuleiroEl.appendChild(btn);
+    });
+  }
+
+  function tentarMover(indice) {
+    if (resolvido) return;
+    var vazio = indiceVazio();
+    if (!saoVizinhas(indice, vazio, tamanho)) return;
+
+    var temp = pecas[vazio]; pecas[vazio] = pecas[indice]; pecas[indice] = temp;
+    movimentos++;
+    movimentosEl.textContent = String(movimentos);
+    renderizarTabuleiro();
+
+    if (estaResolvido()) {
+      resolvido = true;
+      resumoVitoria.textContent = "Você resolveu em " + movimentos + " movimentos!";
+      telaVitoria.classList.remove("escondido");
+    }
+  }
+
+  btnEmbaralharDeNovo.addEventListener("click", function () { iniciarJogo(); });
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaVitoria.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarJogo(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+.vercel
+node_modules
+.agents/
+.claude/skills/

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forca das Palavras</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 10px; font-size: 1rem; }
+  .dica {
+    background: #fff7cd; border: 2px dashed var(--amarelo); border-radius: 14px;
+    padding: 8px 18px; font-weight: 700; margin-bottom: 14px;
+  }
+  .vidas { font-size: 1.6rem; letter-spacing: 6px; margin-bottom: 14px; min-height: 1.4em; }
+  .palavra {
+    font-size: 2.2rem; font-weight: 800; letter-spacing: 10px;
+    background: white; padding: 16px 26px; border-radius: 18px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12); margin-bottom: 20px;
+    min-width: 260px; text-align: center; color: var(--azul);
+  }
+  .teclado {
+    display: grid;
+    grid-template-columns: repeat(9, 42px);
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .tecla {
+    width: 42px; height: 42px;
+    border: none; border-radius: 10px;
+    background: white; font-weight: 800; font-size: 1.1rem;
+    cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    color: var(--azul);
+  }
+  .tecla:hover:not(:disabled) { background: #dbeafe; }
+  .tecla:disabled { opacity: 0.4; cursor: default; }
+  .tecla.acertou { background: var(--verde); color: white; }
+  .tecla.errou { background: var(--vermelho); color: white; }
+  .mensagem { font-size: 1.3rem; font-weight: 700; min-height: 1.6em; margin-bottom: 10px; text-align: center; }
+  button.reiniciar {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  }
+  @media (max-width: 460px) {
+    .teclado { grid-template-columns: repeat(7, 36px); }
+    .tecla { width: 36px; height: 36px; font-size: 1rem; }
+    .palavra { font-size: 1.6rem; letter-spacing: 6px; }
+  }
+  .escondido { display: none !important; }
+  .btn-nivel {
+    background: white; border: none; border-radius: 12px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 14px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #fff3b0; }
+  .btn-nivel small { display: block; font-weight: 400; color: #78716c; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>🔤 Forca das Palavras</h1>
+<p class="instrucoes">Descubra a palavra secreta clicando nas letras antes de perder todas as vidas!</p>
+
+<div class="dica" id="telaNivel" style="border-style:solid; text-align:left;">
+  <p style="font-weight:800; margin:0 0 10px;">Escolha o nível:</p>
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — palavras curtas, 8 vidas</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — 6 vidas</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — palavras longas, 5 vidas</small></button>
+  </div>
+</div>
+
+<div id="telaJogoForca" class="escondido">
+  <div class="dica" id="dica"></div>
+
+  <div class="vidas" id="vidas"></div>
+  <div class="palavra" id="palavra"></div>
+  <div class="mensagem" id="mensagem"></div>
+  <div class="teclado" id="teclado"></div>
+
+  <button class="reiniciar" id="btnReiniciar">🔄 Nova palavra</button>
+</div>
+
+<script>
+  // "nivel" é baseado no tamanho da palavra: fácil (curtas), médio, difícil (longas).
+  var BANCO_PALAVRAS = [
+    { palavra: "GATO", dica: "Animal de estimação que mia", nivel: "facil" },
+    { palavra: "LEAO", dica: "Rei da selva", nivel: "facil" },
+    { palavra: "UVA", dica: "Fruta pequena usada para fazer suco", nivel: "facil" },
+    { palavra: "AZUL", dica: "Cor do céu", nivel: "facil" },
+    { palavra: "VERDE", dica: "Cor das folhas", nivel: "facil" },
+    { palavra: "LAPIS", dica: "Usado para escrever ou desenhar", nivel: "facil" },
+    { palavra: "SOL", dica: "Estrela que ilumina e esquenta o dia", nivel: "facil" },
+    { palavra: "MESA", dica: "Móvel onde a gente come ou estuda", nivel: "facil" },
+    { palavra: "GIRAFA", dica: "Animal com pescoço muito longo", nivel: "medio" },
+    { palavra: "MACACO", dica: "Animal que gosta de bananas", nivel: "medio" },
+    { palavra: "BANANA", dica: "Fruta amarela e curvada", nivel: "medio" },
+    { palavra: "MORANGO", dica: "Fruta vermelha pequena", nivel: "medio" },
+    { palavra: "ABACAXI", dica: "Fruta com coroa de folhas", nivel: "medio" },
+    { palavra: "LARANJA", dica: "Fruta cítrica, também é uma cor", nivel: "medio" },
+    { palavra: "CADERNO", dica: "Usado para escrever na escola", nivel: "medio" },
+    { palavra: "MOCHILA", dica: "Usada para carregar os materiais escolares", nivel: "medio" },
+    { palavra: "TESOURA", dica: "Usada para cortar papel", nivel: "medio" },
+    { palavra: "AMARELO", dica: "Cor do sol", nivel: "medio" },
+    { palavra: "JANELA", dica: "Abertura na parede pra entrar luz e ar", nivel: "medio" },
+    { palavra: "CADEIRA", dica: "Móvel usado para sentar", nivel: "medio" },
+    { palavra: "CACHORRO", dica: "Animal de estimação que late", nivel: "dificil" },
+    { palavra: "ELEFANTE", dica: "Animal grande com tromba", nivel: "dificil" },
+    { palavra: "TARTARUGA", dica: "Animal com casco, é bem devagar", nivel: "dificil" },
+    { palavra: "MELANCIA", dica: "Fruta grande, verde por fora e vermelha por dentro", nivel: "dificil" },
+    { palavra: "BORRACHA", dica: "Serve para apagar o lápis", nivel: "dificil" },
+    { palavra: "VERMELHO", dica: "Cor do morango", nivel: "dificil" },
+    { palavra: "BICICLETA", dica: "Tem duas rodas e pedais", nivel: "dificil" },
+    { palavra: "COMPUTADOR", dica: "Aparelho usado pra estudar, jogar e pesquisar", nivel: "dificil" }
+  ];
+
+  var NIVEIS = {
+    facil: { maxErros: 8 },
+    medio: { maxErros: 6 },
+    dificil: { maxErros: 5 }
+  };
+  var nivelEscolhido = "medio";
+  var MAX_ERROS = 6;
+  var CORACOES = "❤️";
+
+  var palavraEl = document.getElementById("palavra");
+  var vidasEl = document.getElementById("vidas");
+  var mensagemEl = document.getElementById("mensagem");
+  var tecladoEl = document.getElementById("teclado");
+  var dicaEl = document.getElementById("dica");
+  var btnReiniciar = document.getElementById("btnReiniciar");
+
+  var palavraAtual = "";
+  var letrasCertas = [];
+  var erros = 0;
+  var jogoAcabou = false;
+  var palavrasRestantes = [];
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i];
+      copia[i] = copia[j];
+      copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function sortearPalavra() {
+    if (palavrasRestantes.length === 0) {
+      var pool = BANCO_PALAVRAS.filter(function (p) { return p.nivel === nivelEscolhido; });
+      palavrasRestantes = embaralhar(pool);
+    }
+    return palavrasRestantes.pop();
+  }
+
+  function criarTeclado() {
+    tecladoEl.innerHTML = "";
+    var letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (var i = 0; i < letras.length; i++) {
+      var letra = letras[i];
+      var btn = document.createElement("button");
+      btn.className = "tecla";
+      btn.textContent = letra;
+      btn.dataset.letra = letra;
+      btn.addEventListener("click", function (evento) {
+        aoClicarLetra(evento.currentTarget.dataset.letra, evento.currentTarget);
+      });
+      tecladoEl.appendChild(btn);
+    }
+  }
+
+  function novaPartida(nivel) {
+    if (nivel) {
+      nivelEscolhido = nivel;
+      palavrasRestantes = []; // descarta sobras do nível anterior
+      document.getElementById("telaNivel").classList.add("escondido");
+      document.getElementById("telaJogoForca").classList.remove("escondido");
+    }
+    MAX_ERROS = NIVEIS[nivelEscolhido].maxErros;
+    var escolha = sortearPalavra();
+    palavraAtual = escolha.palavra;
+    dicaEl.textContent = "💡 Dica: " + escolha.dica;
+    letrasCertas = [];
+    erros = 0;
+    jogoAcabou = false;
+    mensagemEl.textContent = "";
+
+    criarTeclado();
+    atualizarVidas();
+    atualizarPalavraExibida();
+  }
+
+  function atualizarVidas() {
+    var vidasRestantes = MAX_ERROS - erros;
+    vidasEl.textContent = CORACOES.repeat(Math.max(vidasRestantes, 0)) + "🖤".repeat(erros);
+  }
+
+  function atualizarPalavraExibida() {
+    var exibicao = palavraAtual.split("").map(function (letra) {
+      return letrasCertas.indexOf(letra) !== -1 ? letra : "_";
+    }).join(" ");
+    palavraEl.textContent = exibicao;
+  }
+
+  function aoClicarLetra(letra, botao) {
+    if (jogoAcabou) return;
+    botao.disabled = true;
+
+    if (palavraAtual.indexOf(letra) !== -1) {
+      letrasCertas.push(letra);
+      botao.classList.add("acertou");
+      atualizarPalavraExibida();
+
+      var completou = palavraAtual.split("").every(function (l) {
+        return letrasCertas.indexOf(l) !== -1;
+      });
+      if (completou) {
+        jogoAcabou = true;
+        mensagemEl.textContent = "🎉 Parabéns! Você acertou!";
+        desabilitarTeclado();
+      }
+    } else {
+      erros++;
+      botao.classList.add("errou");
+      atualizarVidas();
+
+      if (erros >= MAX_ERROS) {
+        jogoAcabou = true;
+        palavraEl.textContent = palavraAtual.split("").join(" ");
+        mensagemEl.textContent = "😢 Não foi dessa vez! A palavra era " + palavraAtual;
+        desabilitarTeclado();
+      }
+    }
+  }
+
+  function desabilitarTeclado() {
+    var teclas = tecladoEl.querySelectorAll(".tecla");
+    teclas.forEach(function (t) { t.disabled = true; });
+  }
+
+  btnReiniciar.addEventListener("click", function () { novaPartida(); });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { novaPartida(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>

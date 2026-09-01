@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desafio da Tabuada</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#8b5cf6; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f0f7ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 480px; text-align: center; color: #475569; margin-bottom: 20px; font-size: 1rem; }
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(30,64,175,0.12);
+    width: 100%; max-width: 440px; text-align: center;
+  }
+  .tabuadas-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px;
+  }
+  .btn-tabuada, .btn-todas {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.3rem; font-weight: 800; color: var(--azul);
+    padding: 16px 0; cursor: pointer;
+  }
+  .btn-tabuada:hover, .btn-todas:hover { background: #dbeafe; }
+  .btn-todas { grid-column: span 3; background: var(--roxo); color: white; font-size: 1.1rem; }
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+  .pergunta { font-size: 2.4rem; font-weight: 800; color: var(--azul); margin-bottom: 22px; }
+  .alternativas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alt-btn {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.4rem; font-weight: 800; color: #1e293b;
+    padding: 16px 0; cursor: pointer;
+  }
+  .alt-btn:hover:not(:disabled) { background: #dbeafe; }
+  .alt-btn:disabled { cursor: default; }
+  .alt-btn.certa { background: var(--verde); color: white; }
+  .alt-btn.errada { background: var(--vermelho); color: white; }
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--azul); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+  button.acao {
+    background: var(--verde); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 6px;
+  }
+  .escondido { display: none !important; }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #dbeafe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>✖️ Desafio da Tabuada</h1>
+<p class="instrucoes">Escolha uma tabuada e responda 10 perguntas de multiplicação!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — tabuadas do 1 ao 5</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — tabuadas do 2 ao 10</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — tabuadas do 2 ao 12</small></button>
+  </div>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+
+  <div id="telaEscolha">
+    <p style="font-weight:700; margin:0 0 4px;">Qual tabuada você quer treinar?</p>
+    <div class="tabuadas-grid" id="gradeTabuadas"></div>
+  </div>
+
+  <div id="telaQuiz" class="escondido">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="pergunta" id="pergunta"></div>
+    <div class="alternativas" id="alternativas"></div>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+
+</div>
+
+<script>
+  var TOTAL_PERGUNTAS = 10;
+
+  var telaEscolha = document.getElementById("telaEscolha");
+  var telaQuiz = document.getElementById("telaQuiz");
+  var telaResultado = document.getElementById("telaResultado");
+  var gradeTabuadas = document.getElementById("gradeTabuadas");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var perguntaEl = document.getElementById("pergunta");
+  var alternativasEl = document.getElementById("alternativas");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var perguntas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+
+  var NIVEIS = {
+    facil: { tabuadaMin: 1, tabuadaMax: 5, bMax: 5 },
+    medio: { tabuadaMin: 2, tabuadaMax: 10, bMax: 10 },
+    dificil: { tabuadaMin: 2, tabuadaMax: 12, bMax: 12 }
+  };
+  var nivelEscolhido = "medio";
+
+  function montarTelaEscolha() {
+    var config = NIVEIS[nivelEscolhido];
+    gradeTabuadas.innerHTML = "";
+    for (var n = config.tabuadaMin; n <= config.tabuadaMax; n++) {
+      (function (numero) {
+        var btn = document.createElement("button");
+        btn.className = "btn-tabuada";
+        btn.textContent = "Tabuada do " + numero;
+        btn.addEventListener("click", function () { iniciarQuiz(numero); });
+        gradeTabuadas.appendChild(btn);
+      })(n);
+    }
+    var btnTodas = document.createElement("button");
+    btnTodas.className = "btn-todas";
+    btnTodas.textContent = "🎲 Todas misturadas";
+    btnTodas.addEventListener("click", function () { iniciarQuiz(null); });
+    gradeTabuadas.appendChild(btnTodas);
+  }
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function gerarPerguntas(tabuadaFixa) {
+    var config = NIVEIS[nivelEscolhido];
+    var usadas = {};
+    var lista = [];
+    var tentativasMax = 500;
+    var faixaTabuada = config.tabuadaMax - config.tabuadaMin + 1;
+
+    while (lista.length < TOTAL_PERGUNTAS && tentativasMax > 0) {
+      tentativasMax--;
+      var a = tabuadaFixa !== null ? tabuadaFixa : Math.floor(Math.random() * faixaTabuada) + config.tabuadaMin;
+      var b = Math.floor(Math.random() * config.bMax) + 1;
+      var chave = a + "x" + b;
+      if (usadas[chave]) continue;
+      usadas[chave] = true;
+      lista.push({ a: a, b: b, resposta: a * b });
+    }
+    return lista;
+  }
+
+  function gerarAlternativas(respostaCorreta) {
+    var opcoes = [respostaCorreta];
+    while (opcoes.length < 4) {
+      var variacao = Math.floor(Math.random() * 20) - 10; // -10 a +9
+      var candidata = respostaCorreta + variacao;
+      if (candidata <= 0) continue;
+      if (opcoes.indexOf(candidata) !== -1) continue;
+      opcoes.push(candidata);
+    }
+    return embaralhar(opcoes);
+  }
+
+  function iniciarQuiz(tabuadaFixa) {
+    perguntas = gerarPerguntas(tabuadaFixa);
+    indiceAtual = 0;
+    acertos = 0;
+
+    telaEscolha.classList.add("escondido");
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaQuiz.classList.remove("escondido");
+
+    mostrarPergunta();
+  }
+
+  function mostrarPergunta() {
+    var p = perguntas[indiceAtual];
+    progressoEl.textContent = "Pergunta " + (indiceAtual + 1) + " de " + perguntas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    perguntaEl.textContent = p.a + " × " + p.b + " = ?";
+
+    var opcoes = gerarAlternativas(p.resposta);
+    alternativasEl.innerHTML = "";
+    opcoes.forEach(function (opcao) {
+      var btn = document.createElement("button");
+      btn.className = "alt-btn";
+      btn.textContent = opcao;
+      btn.addEventListener("click", function () { responder(opcao, p.resposta, btn); });
+      alternativasEl.appendChild(btn);
+    });
+  }
+
+  function responder(escolhida, correta, botaoClicado) {
+    var botoes = alternativasEl.querySelectorAll(".alt-btn");
+    botoes.forEach(function (b) { b.disabled = true; });
+
+    if (escolhida === correta) {
+      acertos++;
+      botaoClicado.classList.add("certa");
+    } else {
+      botaoClicado.classList.add("errada");
+      botoes.forEach(function (b) {
+        if (Number(b.textContent) === correta) b.classList.add("certa");
+      });
+    }
+
+    setTimeout(function () {
+      indiceAtual++;
+      if (indiceAtual < perguntas.length) {
+        mostrarPergunta();
+      } else {
+        mostrarResultado();
+      }
+    }, 900);
+  }
+
+  function mostrarResultado() {
+    telaQuiz.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / perguntas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + perguntas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🏆 Excelente!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem!";
+    else resultadoTitulo.textContent = "💪 Continue praticando!";
+  }
+
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      nivelEscolhido = btn.dataset.nivel;
+      document.getElementById("telaNivel").classList.add("escondido");
+      document.getElementById("telaJogo2").classList.remove("escondido");
+      telaEscolha.classList.remove("escondido");
+      montarTelaEscolha();
+    });
+  });
+</script>
+</body>
+</html>

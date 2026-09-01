@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internet Segura</title>
+<style>
+  :root { --azul:#2563eb; --roxo:#7c3aed; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#f2f0ff; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--roxo);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 520px; text-align: center; color: #475569; margin-bottom: 20px; font-size: 1rem; }
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(124,58,237,0.14);
+    width: 100%; max-width: 520px; text-align: center;
+  }
+  .escondido { display: none !important; }
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+  .cenario-icone { font-size: 2.6rem; margin-bottom: 6px; }
+  .cenario { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 18px; line-height: 1.4; }
+  .alternativas { display: flex; flex-direction: column; gap: 10px; }
+  .alt-btn {
+    background: var(--fundo); border: 2px solid transparent; border-radius: 14px;
+    font-size: 1rem; font-weight: 700; color: #1e293b;
+    padding: 14px 16px; cursor: pointer; text-align: left; line-height: 1.35;
+  }
+  .alt-btn:hover:not(:disabled) { border-color: var(--roxo); }
+  .alt-btn:disabled { cursor: default; }
+  .alt-btn.certa { background: var(--verde); color: white; }
+  .alt-btn.errada { background: var(--vermelho); color: white; }
+  .explicacao {
+    margin-top: 16px; padding: 14px 16px; border-radius: 14px;
+    background: #f8fafc; color: #334155; font-size: 0.95rem; line-height: 1.45; text-align: left;
+  }
+  .explicacao.certo { background: #dcfce7; }
+  .explicacao.errado { background: #fee2e2; }
+  button.acao {
+    background: var(--roxo); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 18px;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #ede9fe; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--roxo); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>💻 Internet Segura</h1>
+<p class="instrucoes">Situações do dia a dia com computador, celular e internet. Escolha a atitude mais segura em cada uma!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano)</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano)</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano)</small></button>
+  </div>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+
+  <div id="telaQuiz">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="cenario-icone" id="cenarioIcone"></div>
+    <div class="cenario" id="cenario"></div>
+    <div class="alternativas" id="alternativas"></div>
+    <div class="explicacao escondido" id="explicacao"></div>
+    <button class="acao escondido" id="btnProxima">Próxima ➡️</button>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+
+</div>
+
+<script>
+  // Banco de situações — cada uma tem um ícone, o texto da situação, as opções
+  // (a primeira do array "opcoes" é sempre marcada como a correta em "indiceCorreto"),
+  // uma explicação curta do "porquê", e um "nivel" (facil/medio/dificil, cumulativo).
+  var BANCO_SITUACOES = [
+    {
+      icone: "🔑",
+      cenario: "Você vai criar uma senha nova pra sua conta. Qual dessas é a mais segura?",
+      opcoes: ["Gt7#pLwa9!", "123456", "meunome2015", "senha"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Uma senha forte mistura letras maiúsculas, minúsculas, números e símbolos, e não é uma palavra fácil de adivinhar (como seu nome ou 'senha')."
+    },
+    {
+      icone: "🙋",
+      cenario: "Uma pessoa que você não conhece te chama numa rede social e pede seu endereço de casa. O que você faz?",
+      opcoes: ["Não respondo e conto pra um adulto de confiança", "Conto tudo, afinal ela parece legal", "Só respondo se ela mandar uma foto dela primeiro"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Informações como endereço, escola e telefone são particulares. Nunca dê esses dados pra desconhecidos — e sempre avise um adulto de confiança quando isso acontecer."
+    },
+    {
+      icone: "🎁",
+      cenario: "Chega uma mensagem dizendo que você ganhou um prêmio e precisa clicar num link e digitar sua senha pra receber. O que é isso?",
+      opcoes: ["Provavelmente um golpe (phishing) — não vou clicar", "Uma promoção de verdade, vou clicar e digitar tudo", "Vou repassar pra todos os amigos avisando que é verdade"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Mensagens de 'prêmio' que pedem senha ou dados pessoais quase sempre são golpes chamados phishing. O jeito mais seguro é não clicar e contar pra um adulto."
+    },
+    {
+      icone: "😢",
+      cenario: "Você vê um colega sendo xingado e humilhado num grupo de chat da turma. Qual é a atitude certa?",
+      opcoes: ["Avisar um adulto de confiança, como um professor ou responsável", "Ignorar, não é da minha conta", "Rir junto pra não ficar de fora do grupo"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Isso é cyberbullying. A atitude mais corajosa e correta é não participar e contar pra um adulto de confiança — isso ajuda a proteger o colega."
+    },
+    {
+      icone: "📰",
+      cenario: "Você vê uma notícia chocante na internet, com muitas curtidas e compartilhamentos. Antes de acreditar e compartilhar, o que é uma boa ideia fazer?",
+      opcoes: ["Checar se sites de notícias confiáveis também estão falando sobre isso", "Compartilhar na hora, porque tem muitas curtidas", "Acreditar porque um amigo mandou"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "Nem tudo que aparece na internet é verdade. Antes de acreditar ou compartilhar, vale checar em fontes confiáveis se a informação é real."
+    },
+    {
+      icone: "🦠",
+      cenario: "Um site oferece um joguinho grátis, mas pede pra você desativar o antivírus do computador antes de baixar. O que você faz?",
+      opcoes: ["Não baixo, e conto pra um adulto sobre o site", "Desativo o antivírus rapidinho, deve ser seguro", "Baixo mesmo assim, sem desativar nada"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "Pedir pra desativar o antivírus é um sinal clássico de vírus/programa malicioso disfarçado. O mais seguro é não baixar e avisar um adulto."
+    },
+    {
+      icone: "📸",
+      cenario: "Uma pessoa on-line te pede uma foto sua de um jeito que te deixa desconfortável. O que você deve fazer?",
+      opcoes: ["Não responder e contar pra um adulto de confiança imediatamente", "Mandar a foto rapidinho pra pessoa parar de insistir", "Responder perguntando por que ela quer a foto"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "Ninguém tem o direito de te deixar desconfortável assim. A atitude certa é não responder ao pedido e contar pra um adulto de confiança na hora."
+    },
+    {
+      icone: "🖼️",
+      cenario: "Antes de postar uma foto ou vídeo em que aparece um amigo, o que é legal fazer primeiro?",
+      opcoes: ["Perguntar se ele(a) deixa você postar", "Postar direto, sem avisar", "Postar e depois marcar o nome dele(a) sem falar nada"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "Pedir permissão antes de postar fotos ou vídeos de outras pessoas é uma forma de respeito — a imagem de cada um só deve ser compartilhada com autorização."
+    },
+    {
+      icone: "⏰",
+      cenario: "Depois de um bom tempo jogando ou vendo vídeos, qual é a atitude mais equilibrada?",
+      opcoes: ["Fazer uma pausa e cuidar de outras coisas, como estudar, brincar e dormir bem", "Continuar sem parar, tempo de tela nunca faz mal", "Ficar até muito tarde da noite pra terminar tudo"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "Um tempo de tela equilibrado, com pausas, ajuda a cuidar do sono, dos estudos e de outras brincadeiras — tudo tem seu momento certo."
+    },
+    {
+      icone: "🛡️",
+      cenario: "Pra que serve o antivírus instalado num computador ou celular?",
+      opcoes: ["Proteger o aparelho contra programas maliciosos (vírus)", "Deixar a internet mais rápida", "Tirar fotos de melhor qualidade"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "O antivírus procura e bloqueia programas maliciosos que podem roubar dados ou estragar o aparelho — por isso é importante mantê-lo sempre ativado e atualizado."
+    },
+    {
+      icone: "📶",
+      cenario: "Pra que serve o Wi-Fi do celular ou computador?",
+      opcoes: ["Conectar o aparelho à internet sem precisar de cabo", "Deixar a tela mais colorida", "Aumentar a bateria do aparelho"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "Wi-Fi é uma forma de conectar aparelhos à internet usando ondas de rádio, sem precisar ligar um cabo."
+    },
+    {
+      icone: "⌨️",
+      cenario: "Você digitou um texto e apagou uma parte por engano. Qual atalho do teclado costuma 'desfazer' a última ação?",
+      opcoes: ["Ctrl + Z", "Ctrl + P", "Ctrl + C"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "Ctrl+Z é o atalho de 'desfazer' na maioria dos programas — ótimo pra corrigir erros rapidinho. Ctrl+P costuma imprimir, e Ctrl+C copia."
+    },
+    {
+      icone: "🔒",
+      cenario: "Você terminou de usar o computador da sala de informática da escola, que fica com todo mundo. O que é importante fazer antes de sair?",
+      opcoes: ["Sair (fazer logout) da sua conta", "Deixar tudo aberto, o próximo resolve", "Anotar sua senha num papel colado no monitor"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "Em computadores compartilhados, sempre saia da sua conta (logout) antes de ir embora, pra ninguém mais acessar suas informações."
+    },
+    {
+      icone: "👤",
+      cenario: "Alguém que diz ser da sua idade te chama de amizade, mas o perfil é bem novo e não tem quase nenhuma foto. O que fazer?",
+      opcoes: ["Ter cuidado, e contar pra um adulto se achar estranho", "Aceitar na hora, todo perfil novo é assim mesmo", "Mandar uma foto sua pra provar que você é de confiança"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Perfis muito novos e sem informação podem ser falsos. Vale desconfiar e contar pra um adulto de confiança antes de aceitar."
+    },
+    {
+      icone: "💳",
+      cenario: "Um joguinho pede pra você digitar o número do cartão de crédito de um adulto pra 'liberar' um item de graça. O que fazer?",
+      opcoes: ["Não digitar nada e contar pra um adulto", "Perguntar o número pra minha família e digitar rapidinho", "Digitar qualquer número, não faz diferença"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Nenhum joguinho 'de graça' deveria pedir dados de cartão de crédito. Isso é um sinal de golpe — nunca digite esses dados sem um adulto de confiança presente."
+    },
+    {
+      icone: "🔗",
+      cenario: "Alguém te manda um link estranho, sem explicar nada, do nada. Antes de clicar, o que é uma boa ideia fazer?",
+      opcoes: ["Pensar se você esperava esse link e desconfiar se não fizer sentido", "Clicar rapidinho, links são sempre seguros", "Clicar e mandar pra todos os amigos também"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "Links inesperados, mesmo de conhecidos (a conta deles pode ter sido invadida), merecem desconfiança antes de clicar."
+    },
+    {
+      icone: "🕵️",
+      cenario: "Pra que serve o modo de navegação 'anônimo' ou 'privado' do navegador?",
+      opcoes: ["Não guardar o histórico de sites visitados naquele computador", "Deixar a internet mais rápida", "Esconder sua identidade de todo mundo na internet"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "O modo anônimo só evita que o histórico e os dados fiquem salvos naquele navegador — ele não te deixa 'invisível' na internet."
+    },
+    {
+      icone: "🌐",
+      cenario: "O que significa a sigla 'URL', aquele texto que aparece lá em cima no navegador?",
+      opcoes: ["É o endereço de uma página na internet", "É o nome do seu provedor de internet", "É uma senha que protege o site"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "URL é o 'endereço' que leva até uma página específica na internet, parecido com o endereço de uma casa."
+    }
+  ];
+
+  var NIVEIS = {
+    facil: { rodadas: 6, niveisIncluidos: ["facil"] },
+    medio: { rodadas: 8, niveisIncluidos: ["facil", "medio"] },
+    dificil: { rodadas: 10, niveisIncluidos: ["facil", "medio", "dificil"] }
+  };
+  var nivelEscolhido = "medio";
+
+  var telaQuiz = document.getElementById("telaQuiz");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var cenarioIconeEl = document.getElementById("cenarioIcone");
+  var cenarioEl = document.getElementById("cenario");
+  var alternativasEl = document.getElementById("alternativas");
+  var explicacaoEl = document.getElementById("explicacao");
+  var btnProxima = document.getElementById("btnProxima");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var rodadas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function prepararSituacao(situacao) {
+    // embaralha a ordem das opções, guardando qual é a correta
+    var opcoesComIndice = situacao.opcoes.map(function (texto, i) { return { texto: texto, correta: i === situacao.indiceCorreto }; });
+    var embaralhadas = embaralhar(opcoesComIndice);
+    return { icone: situacao.icone, cenario: situacao.cenario, explicacao: situacao.explicacao, opcoes: embaralhadas };
+  }
+
+  function iniciarQuiz(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var config = NIVEIS[nivelEscolhido];
+    var pool = BANCO_SITUACOES.filter(function (s) { return config.niveisIncluidos.indexOf(s.nivel) !== -1; });
+    var banco = embaralhar(pool).slice(0, config.rodadas);
+    rodadas = banco.map(prepararSituacao);
+    indiceAtual = 0;
+    acertos = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaQuiz.classList.remove("escondido");
+    mostrarSituacao();
+  }
+
+  function mostrarSituacao() {
+    var r = rodadas[indiceAtual];
+    progressoEl.textContent = "Situação " + (indiceAtual + 1) + " de " + rodadas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    cenarioIconeEl.textContent = r.icone;
+    cenarioEl.textContent = r.cenario;
+    explicacaoEl.classList.add("escondido");
+    explicacaoEl.className = "explicacao escondido";
+    btnProxima.classList.add("escondido");
+
+    alternativasEl.innerHTML = "";
+    r.opcoes.forEach(function (opcao) {
+      var btn = document.createElement("button");
+      btn.className = "alt-btn";
+      btn.textContent = opcao.texto;
+      btn.addEventListener("click", function () { responder(opcao.correta, btn, r); });
+      alternativasEl.appendChild(btn);
+    });
+  }
+
+  function responder(foiCorreta, botaoClicado, r) {
+    var botoes = alternativasEl.querySelectorAll(".alt-btn");
+    botoes.forEach(function (b) { b.disabled = true; });
+
+    if (foiCorreta) {
+      acertos++;
+      botaoClicado.classList.add("certa");
+    } else {
+      botaoClicado.classList.add("errada");
+      botoes.forEach(function (b, i) {
+        if (r.opcoes[i].correta) b.classList.add("certa");
+      });
+    }
+
+    explicacaoEl.textContent = (foiCorreta ? "✅ " : "💡 ") + r.explicacao;
+    explicacaoEl.className = "explicacao " + (foiCorreta ? "certo" : "errado");
+    explicacaoEl.classList.remove("escondido");
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    btnProxima.classList.remove("escondido");
+  }
+
+  function avancar() {
+    indiceAtual++;
+    if (indiceAtual < rodadas.length) {
+      mostrarSituacao();
+    } else {
+      mostrarResultado();
+    }
+  }
+
+  function mostrarResultado() {
+    telaQuiz.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / rodadas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + rodadas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "🛡️ Você é um(a) super internauta seguro(a)!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem, continue de olho!";
+    else resultadoTitulo.textContent = "💪 Vamos praticar mais essas situações!";
+  }
+
+  btnProxima.addEventListener("click", avancar);
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarQuiz(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>
