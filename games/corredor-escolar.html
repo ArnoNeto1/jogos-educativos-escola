@@ -43,6 +43,14 @@
   .overlay.mostrar { display: flex; }
   .overlay h2 { margin: 0; font-size: 1.6rem; }
   .overlay .recorde-novo { color: var(--amarelo); font-weight: 800; }
+  .placar-turma {
+    background: rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;
+    width: 100%; max-width: 260px; margin: 4px 0;
+  }
+  .placar-titulo { margin: 0 0 6px; font-weight: 700; font-size: 0.9rem; }
+  .placar-turma ol { margin: 0; padding-left: 20px; text-align: left; font-size: 0.85rem; }
+  .placar-turma li { margin-bottom: 2px; }
+  .placar-carregando { opacity: 0.7; list-style: none; margin-left: -20px; }
   .controles { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
   .controles button {
     border: none; border-radius: 12px; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.12);
@@ -87,6 +95,10 @@
     <h2 id="overlayTitulo">Ops, esbarrou!</h2>
     <p id="overlayResumo"></p>
     <p class="recorde-novo escondido" id="overlayRecordeNovo">🎉 Novo recorde!</p>
+    <div class="placar-turma" id="placarTurma">
+      <p class="placar-titulo">🏆 Placar da turma</p>
+      <ol id="placarLista"><li class="placar-carregando">Carregando...</li></ol>
+    </div>
     <button class="acao" id="btnReiniciar">🔄 Jogar novamente</button>
   </div>
 </div>
@@ -99,6 +111,9 @@
 </div>
 <p class="dica-swipe">💡 No celular/tablet: arraste o dedo na tela para os lados, pra cima (pular) ou pra baixo (abaixar).</p>
 
+<script src="../lib/supabase.min.js"></script>
+<script src="../lib/supabase-config.js"></script>
+<script src="../lib/placar.js"></script>
 <script>
   var CANVAS_W = 400, CANVAS_H = 560;
   var HORIZON_Y = 150, NEAR_Y = 480;
@@ -372,7 +387,34 @@
       overlayResumo.textContent = "Pontos: " + pontuacaoFinal + " • Estrelas: " + estrelasColetadas;
       overlayRecordeNovo.classList.toggle("escondido", !bateuRecorde);
       overlay.classList.add("mostrar");
+      atualizarPlacarTurma(pontuacaoFinal);
     }, 350);
+  }
+
+  // Envia a pontuação pro placar compartilhado da turma (Supabase) e mostra o top 10
+  // daquele nível. Se não tiver internet ou o aluno não quiser dar o nome, o jogo
+  // continua funcionando normalmente — o placar é só um extra, não trava nada.
+  function atualizarPlacarTurma(pontuacaoFinal) {
+    var listaEl = document.getElementById("placarLista");
+    if (typeof enviarRecordePlacar === "function") {
+      enviarRecordePlacar({ jogo: "corredor-escolar", nivel: nivelEscolhido, pontuacao: pontuacaoFinal });
+    }
+    if (typeof buscarPlacar !== "function") return;
+    buscarPlacar({ jogo: "corredor-escolar", nivel: nivelEscolhido }).then(function (lista) {
+      if (!lista.length) {
+        listaEl.innerHTML = '<li class="placar-carregando">Seja o(a) primeiro(a) no placar!</li>';
+        return;
+      }
+      listaEl.innerHTML = lista.map(function (item) {
+        return "<li>" + escapeHtml(item.nome_aluno) + " — " + item.pontuacao + "</li>";
+      }).join("");
+    });
+  }
+
+  function escapeHtml(texto) {
+    var div = document.createElement("div");
+    div.textContent = texto;
+    return div.innerHTML;
   }
 
   function moverEsquerda() { if (!jogoAcabou && laneAtual > -1) laneAtual--; }

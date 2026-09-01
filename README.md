@@ -172,116 +172,112 @@ palavras), Desafio Java (22 perguntas) — todas em português, 100% originais.
 ## Testar localmente
 
 Basta abrir o arquivo `index.html` em qualquer navegador (duplo clique) —
-não precisa de servidor nem instalar nada. Isso vale pra jogar sozinho.
+não precisa de servidor nem instalar nada.
 
-Para o modo **"Jogar em rede"** (multiplayer no laboratório), veja a seção abaixo —
-aí sim é preciso rodar um servidor.
+## Multiplayer pela internet (Supabase)
 
-## Multiplayer em rede local (laboratório de informática)
-
-Quatro jogos têm um modo **"Jogar em rede"**, pra dois (ou mais, no caso do Mundo de
-Blocos) alunos jogarem entre si usando computadores diferentes na mesma rede local
-(a rede do laboratório, sem precisar de internet):
+Quatro jogos têm um modo **"Jogar em rede"**, pra alunos jogarem entre si em
+computadores diferentes:
 
 - ❌ Jogo da Velha — 2 jogadores (X e O)
 - ♔ Xadrez — 2 jogadores (Brancas e Pretas)
 - ⚫ Damas — 2 jogadores (Vermelhas e Brancas)
 - 🧱 Mundo de Blocos — quantos alunos quiser, todos no mesmo mundo ao mesmo tempo
 
-Isso funciona com um **servidorzinho** rodando em **apenas um computador** (pode ser
-o do professor ou qualquer máquina do laboratório) — os outros computadores dos
-alunos não precisam instalar nada, só abrir o navegador.
+Isso já **funciona pela internet de verdade**, de qualquer lugar — não precisa
+mais ligar nenhum servidor local no laboratório (a versão antiga, que exigia
+um computador rodando `npm start`, foi substituída). A "central de mensagens"
+agora é o [Supabase](https://supabase.com) (um banco de dados na nuvem, plano
+gratuito), usando o recurso de tempo real dele (Realtime Presence/Broadcast)
+pra repassar as jogadas entre os navegadores dos alunos.
 
-### 1. Preparar o computador que vai ser o servidor (só uma vez)
+Configuração necessária (só uma vez, por quem administra o site):
+1. Crie um projeto gratuito em [supabase.com](https://supabase.com/dashboard).
+2. Rode o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) no **SQL
+   Editor** do painel do Supabase (cria as tabelas do placar e das salas).
+3. Em `lib/supabase-config.js`, preencha `SUPABASE_URL` e `SUPABASE_ANON_KEY`
+   com os valores do seu projeto (**Project Settings → Data API**/**API
+   Keys** — use a chave `anon`/`public`, nunca a `service_role`).
 
-Precisa ter o [Node.js](https://nodejs.org/) instalado (baixe a versão "LTS" e
-instale normalmente, next-next-next). Depois, abra um terminal (PowerShell ou
-Prompt de Comando) dentro desta pasta e rode:
-
-```bash
-npm install
-```
-
-Isso baixa a única dependência (a biblioteca `ws`, usada só pra comunicação em
-rede). Só precisa fazer isso uma vez.
-
-### 2. Ligar o servidor (toda vez que for usar)
-
-No mesmo terminal, dentro desta pasta, rode:
-
-```bash
-npm start
-```
-
-O terminal vai mostrar uma ou mais mensagens como:
-
-```
-Servidor rodando! Acesse pelos computadores da rede em:
-  http://192.168.0.15:8080/
-```
-
-Esse endereço `http://192.168....:8080/` é o que os alunos vão digitar no
-navegador dos outros computadores (o IP muda conforme a rede — use o que
-aparecer no seu terminal). Deixe essa janela do terminal aberta enquanto os
-alunos estiverem jogando; fechar o terminal (ou apertar Ctrl+C nele) desliga
-o servidor pra todo mundo.
-
-Se a porta `8080` já estiver em uso, dá pra escolher outra:
-`node server.js 9000`, por exemplo.
-
-> **Firewall do Windows:** na primeira vez que rodar, o Windows pode perguntar
-> se libera o Node.js na rede — clique em **Permitir acesso**, senão os outros
-> computadores não conseguem se conectar.
-
-### 3. Os alunos entrarem no jogo
-
-Em cada computador do laboratório, o aluno abre o navegador e digita o
-endereço que apareceu no terminal do servidor (ex.: `http://192.168.0.15:8080/`).
-Isso abre o mesmo portal de jogos normalmente. Dentro do jogo desejado, em vez
-de "Dois jogadores"/"Jogar sozinho", ele escolhe **"Jogar em rede"** e digita um
-**código de sala** combinado com o colega (pode ser qualquer palavra, tipo
-`turma5a` ou `mesa3` — só precisa ser igual dos dois lados pra caírem na mesma
-partida). Quem entra primeiro na sala joga com uma cor/símbolo, quem entra depois
-joga com o outro.
+Depois disso, o multiplayer funciona sozinho — os alunos só escolhem "Jogar em
+rede" e combinam um código de sala (qualquer palavra, tipo `turma5a`), igual
+antes.
 
 ### Observações importantes
 
-- Só o computador-servidor precisa do Node.js instalado; os computadores dos
-  alunos só precisam de um navegador comum.
-- Todos os computadores (servidor e alunos) precisam estar na **mesma rede
-  local** (mesmo Wi-Fi/cabo do laboratório) — não funciona pela internet.
 - No Mundo de Blocos em rede, o mundo é combinado entre os jogadores da sala
   (o primeiro a entrar gera o mundo, os demais recebem uma cópia idêntica) mas
-  **não fica salvo** — ao fechar a sala/página, o mundo se perde (o modo
-  "Jogar sozinho" continua salvando normalmente no navegador). Por isso, o
-  botão de resetar mundo fica desativado durante uma partida em rede.
+  **não fica salvo** no Supabase — ao todos saírem da sala, o mundo se perde
+  (o modo "Jogar sozinho" continua salvando normalmente no navegador).
 - No Jogo da Velha, Xadrez e Damas, cada sala comporta 2 jogadores; se um
   terceiro entrar com o mesmo código, ele só vai receber as jogadas mas não
   terá uma cor/símbolo designado — combine com os alunos pra usar um código
   de sala diferente por dupla.
+- O plano gratuito do Supabase tem limites generosos (conexões simultâneas e
+  mensagens por mês) mais do que suficientes pra uma escola — só vale ficar de
+  olho se o uso crescer muito.
 
-### Se aparecer "Conexão com o servidor perdida"
+## Placar compartilhado da turma (Supabase)
 
-- Confira se a janela do terminal com "Servidor rodando!" ainda está aberta —
-  fechar ela (ou o computador dormir) derruba a conexão de todo mundo na hora.
-  Se foi isso, é só rodar `npm start` de novo e todo mundo recarregar a página.
-- Se aparecer um aviso vermelho no topo da tela **durante** o jogo (não só na
-  tela inicial), clique em **Recarregar** e entre na mesma sala de novo — isso
-  já foi corrigido pra aparecer sempre que a conexão cai, mesmo com a partida
-  já em andamento (antes, em alguns casos, o aviso ficava escondido).
-- O jogo manda um "sinal de vida" pro servidor a cada 20 segundos sozinho, pra
-  evitar que a conexão caia sozinha só por ficar um tempo sem nenhuma jogada.
+Corredor da Escola já mostra um **placar compartilhado entre os alunos** (top
+10) depois de cada partida, além do recorde pessoal salvo no navegador. Usa a
+mesma conexão com o Supabase configurada acima (tabela `recordes`, já incluída
+em [`supabase/schema.sql`](supabase/schema.sql)). Na primeira vez que um aluno
+tenta enviar uma pontuação, o jogo pergunta um apelido (fica salvo no navegador
+pra não perguntar de novo).
+
+Esse recurso usa o arquivo [`lib/placar.js`](lib/placar.js), pensado pra ser
+fácil de reaproveitar nos outros jogos com recorde (Quebra-Blocos, Piloto
+Espacial, Sequência Musical, Corrida Kart) — é só chamar `enviarRecordePlacar(...)`
+e `buscarPlacar(...)` no final da partida, do mesmo jeito que foi feito no
+Corredor da Escola. Ainda não fizemos isso nos outros jogos — é uma boa
+próxima etapa.
+
+⚠️ **Sobre segurança do placar:** como não tem sistema de login pros alunos,
+qualquer pessoa tecnicamente consegue enviar uma pontuação falsa direto pelo
+código (não tem como impedir isso 100% sem exigir conta de aluno, o que fugiria
+da proposta "sem cadastro" do site). Pra uma brincadeira de sala de aula isso
+não costuma ser problema, mas não é um placar "à prova de trapaça".
 
 ## Adicionar um novo jogo
 
 1. Crie um novo arquivo HTML autocontido em `games/`.
 2. Adicione um item no array `window.GAMES` em `data/games.js` apontando pro arquivo.
 
-## Publicar online de graça (recomendado: Vercel)
+## Onde o site está publicado
+
+Este projeto está publicado (de graça) em três lugares ao mesmo tempo:
+
+- **GitHub** (código-fonte): https://github.com/ArnoNeto1/jogos-educativos-escola
+- **Vercel**: https://jogos-educativos-escola.vercel.app
+- **Cloudflare Pages**: https://jogos-educativos-escola.pages.dev
+
+Os dois links de hospedagem servem o mesmo conteúdo — dá pra usar qualquer um
+dos dois com os alunos, ou manter os dois como redundância (se um sair do ar,
+o outro continua funcionando).
+
+### Publicar uma atualização
+
+Depois de mudar algo no código:
+
+```bash
+# Vercel (a partir da pasta do projeto, com a CLI já instalada e logada)
+vercel deploy --prod
+
+# Cloudflare Pages (a partir da pasta do projeto, com a CLI wrangler já instalada e logada)
+wrangler pages deploy . --project-name=jogos-educativos-escola --commit-dirty=true
+
+# GitHub (guarda o histórico do código)
+git add .
+git commit -m "descreva o que mudou"
+git push
+```
+
+### Publicar do zero (se for criar sua própria cópia)
 
 1. Instale o [Git](https://git-scm.com/) e crie uma conta gratuita no
-   [GitHub](https://github.com/) e na [Vercel](https://vercel.com/) (a Vercel
-   permite login direto com a conta do GitHub).
+   [GitHub](https://github.com/) e na [Vercel](https://vercel.com/) e/ou
+   [Cloudflare](https://dash.cloudflare.com/) (dá pra logar com a conta do GitHub nas duas).
 2. Envie esta pasta para um repositório no GitHub:
    ```bash
    git init
@@ -291,23 +287,12 @@ joga com o outro.
    git remote add origin https://github.com/SEU-USUARIO/jogos-educativos-escola.git
    git push -u origin main
    ```
-3. Na Vercel, clique em **Add New Project**, selecione o repositório que você
-   acabou de criar e clique em **Deploy** (não precisa mudar nenhuma configuração,
-   é um site estático).
-4. A Vercel vai gerar um link tipo `https://jogos-educativos-escola.vercel.app`
-   — é esse link que você compartilha com os alunos.
-
-### Alternativa mais rápida (sem GitHub)
-
-Se preferir não usar Git, instale a CLI da Vercel e rode direto desta pasta:
-
-```bash
-npm install -g vercel
-vercel
-```
-
-Ela vai pedir login (abre o navegador) e perguntar algumas configurações —
-pode aceitar todas as opções padrão. Ao final ela imprime o link público do site.
+3. **Vercel:** instale `npm install -g vercel`, rode `vercel` dentro da pasta (ou
+   conecte o repositório pelo site vercel.com) — não precisa mudar nenhuma
+   configuração, é um site estático.
+4. **Cloudflare Pages:** instale `npm install -g wrangler`, rode `wrangler login`,
+   depois `wrangler pages project create SEU-PROJETO` e
+   `wrangler pages deploy . --project-name=SEU-PROJETO`.
 
 ## Licença / autoria
 
@@ -325,3 +310,12 @@ modificar e distribuir como quiser. As exceções são:
   dificuldade — ver descrição completa acima. Diferente dos outros jogos do
   site, esse não é 100% original, mas ambas as licenças permitem
   explicitamente o uso, modificação e redistribuição feitos aqui.
+- `lib/supabase.min.js`, a biblioteca open-source oficial `@supabase/supabase-js`
+  (licença MIT), usada pra conectar o site ao banco de dados do Supabase
+  (multiplayer pela internet e placar compartilhado).
+
+**Sobre a chave do Supabase em `lib/supabase-config.js`:** ela é a chave
+`anon`/`public`, feita pra ficar visível no código do site — o Supabase foi
+desenhado assim de propósito, e o controle de acesso de verdade fica nas
+regras (RLS) definidas em `supabase/schema.sql`. Nunca coloque a chave
+`service_role` (essa sim é secreta) em nenhum arquivo deste projeto.
