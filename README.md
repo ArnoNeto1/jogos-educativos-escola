@@ -5,7 +5,7 @@ sem coleta de dados) para os alunos jogarem no navegador.
 
 ## Níveis de dificuldade
 
-Todos os 29 jogos do catálogo têm 3 níveis, pensados por faixa de ano escolar:
+Todos os 31 jogos do catálogo têm 3 níveis, pensados por faixa de ano escolar:
 
 - 🟢 **Fácil** — 1º ao 3º ano
 - 🟡 **Médio** — 4º ao 6º ano
@@ -27,7 +27,10 @@ quantidade de obstáculos. No 4 em Linha, o nível ajusta a inteligência artifi
 do "Contra o computador" (fácil = ao acaso, médio = ataca/bloqueia na hora, difícil
 = calcula 5 jogadas à frente com poda alfa-beta). No Quebra-Blocos e no Piloto
 Espacial (arcade), o nível muda velocidade/tamanho dos elementos. Nos Ladrilhos
-Gêmeos, o nível muda o tamanho do tabuleiro e a quantidade de pares.
+Gêmeos, o nível muda o tamanho do tabuleiro e a quantidade de pares. No Desafio
+Java, o nível fácil é só lógica de programação em português (sem código de
+verdade, pra fazer sentido pra criança pequena) — só a partir do médio é que
+aparece código real em Java, ficando mais avançado no difícil.
 
 **Aleatório vs. fixo:** Tabuada, Somar e Subtrair, Contando Bichos e Complete a
 Sequência geram as contas na hora, com números sorteados — variedade praticamente
@@ -36,7 +39,7 @@ uma lista de fatos/palavras reais (não dá pra "inventar" aleatoriamente um fat
 histórico verdadeiro) — mas essa lista já é sempre embaralhada, e foi ampliada
 pra ter bastante variedade: Geografia (26 perguntas), História (18 fatos),
 Internet Segura (18 situações), Painel de Sílabas (30 palavras), Forca (28
-palavras) — todas em português, 100% originais.
+palavras), Desafio Java (22 perguntas) — todas em português, 100% originais.
 
 ## Jogos incluídos
 
@@ -111,6 +114,21 @@ palavras) — todas em português, 100% originais.
   desenho (emojis) e conecte-os por um caminho livre de no máximo 2 curvas, ao estilo dos clássicos
   "jogos de conectar ladrilhos". O nível muda o tamanho do tabuleiro (de 4×4/8 pares até 8×8/32
   pares). Tem um botão de "Embaralhar restantes" pra nunca ficar travado sem nenhum par possível.
+- 🏎️ Corrida Kart (Geral) — jogo de corrida em 3D de verdade (com física de veículo, câmera que
+  persegue o carro, derrapagem e som de pneu). Diferente dos outros jogos do site (que são 100%
+  originais), esse usa como base o projeto de código aberto
+  [Starter-Kit-Racing](https://github.com/mrdoob/Starter-Kit-Racing) (licença MIT) do mrdoob (criador
+  do Three.js), com modelos 3D CC0 da [Kenney](https://kenney.nl) — ambas licenças permitem
+  explicitamente usar, modificar e redistribuir. Adaptamos pra rodar 100% offline (sem depender de
+  nenhum servidor externo) e criamos 3 pistas diferentes por nível (a pista "Médio" é a original; as
+  pistas "Fácil" e "Difícil" são novas, desenhadas por nós usando as mesmas peças 3D), além de ajustar
+  a velocidade do carro por dificuldade. O tempo de volta e o recorde são salvos separadamente por
+  nível.
+- ☕ Desafio Java (Programação) — quiz sobre como programadores pensam e sobre a linguagem Java: no
+  fácil, é só lógica de programação em português (o que é um algoritmo, um "bug", um loop, uma
+  decisão "se...então..."), sem nenhum código de verdade — didático pro Fundamental I. A partir do
+  médio, já aparece código real em Java pra ler e entender (variáveis, `System.out.println`,
+  comparações), e o difícil cobra laços de repetição, condições `if/else` e funções.
 
 ## Extra pessoal (não listado no catálogo dos alunos)
 
@@ -295,6 +313,15 @@ pode aceitar todas as opções padrão. Ao final ela imprime o link público do 
 
 Todo o código (HTML, CSS, JS e os jogos) foi criado do zero para este projeto,
 sem uso de assets, textos ou código de terceiros — livre para a escola usar,
-modificar e distribuir como quiser. A única exceção é `lib/three.min.js`, a
-biblioteca open-source Three.js (licença MIT) usada só no Mundo de Blocos para
-desenhar gráficos 3D — ela não faz parte do conteúdo educativo em si.
+modificar e distribuir como quiser. As exceções são:
+
+- `lib/three.min.js`, a biblioteca open-source Three.js (licença MIT) usada só no
+  Mundo de Blocos para desenhar gráficos 3D — ela não faz parte do conteúdo
+  educativo em si.
+- `games/corrida-kart/`, que usa como base o projeto open-source
+  [Starter-Kit-Racing](https://github.com/mrdoob/Starter-Kit-Racing) do mrdoob
+  (licença MIT, incluída em `games/corrida-kart/LICENSE`) e modelos 3D CC0 da
+  [Kenney](https://kenney.nl), adaptados com pistas novas e ajustes de
+  dificuldade — ver descrição completa acima. Diferente dos outros jogos do
+  site, esse não é 100% original, mas ambas as licenças permitem
+  explicitamente o uso, modificação e redistribuição feitos aqui.

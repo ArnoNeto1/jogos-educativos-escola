@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Corrida Kart</title>
+<style>
+	body { margin: 0; overflow: hidden; background: #000; font-family: "Segoe UI", Verdana, Arial, sans-serif; }
+	canvas { display: block; touch-action: none; }
+
+	a.voltar {
+		position: absolute; top: 12px; left: 12px; z-index: 30;
+		text-decoration: none; font-weight: 700; color: #2563eb;
+		background: white; padding: 8px 16px; border-radius: 999px;
+		box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+	}
+
+	#telaNivel {
+		position: fixed; inset: 0; z-index: 25;
+		background: linear-gradient(160deg, #0f172a, #1e293b);
+		display: flex; flex-direction: column; align-items: center; justify-content: center;
+		gap: 10px; padding: 20px; color: white; text-align: center;
+	}
+	#telaNivel h1 { margin: 0 0 4px; font-size: 1.8rem; }
+	#telaNivel p.instrucoes { margin: 0 0 16px; color: #cbd5e1; max-width: 420px; }
+	.btn-nivel {
+		background: white; border: none; border-radius: 12px;
+		font-size: 1.05rem; font-weight: 700; color: #1e293b;
+		padding: 14px 22px; cursor: pointer; text-align: left; width: 100%; max-width: 320px; display: block;
+	}
+	.btn-nivel:hover { background: #dbeafe; }
+	.btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.78rem; }
+	.creditos { margin-top: 18px; font-size: 0.72rem; color: #94a3b8; max-width: 420px; }
+	.creditos a { color: #93c5fd; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../../index.html">⬅ Voltar</a>
+
+<div id="telaNivel">
+	<h1>🏎️ Corrida Kart</h1>
+	<p class="instrucoes">Use as setas ⬅️➡️⬆️⬇️ (ou WASD, ou o dedo na tela) pra dirigir e completar voltas o mais rápido possível!</p>
+	<button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — carro mais lento, pista curta e simples</small></button>
+	<button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — velocidade e pista padrão</small></button>
+	<button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — carro mais rápido, pista mais longa</small></button>
+	<p class="creditos">Modelos 3D originais de <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> (CC0) e código-base de
+		<a href="https://github.com/mrdoob/Starter-Kit-Racing" target="_blank" rel="noopener">mrdoob/Starter-Kit-Racing</a> (MIT), adaptado para este site.</p>
+</div>
+
+<script type="importmap">
+{
+	"imports": {
+		"three": "./vendor/three/three.module.js",
+		"three/addons/": "./vendor/three/addons/",
+		"crashcat": "./vendor/crashcat/crashcat.mjs"
+	}
+}
+</script>
+<script>
+	document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+		btn.addEventListener("click", function () {
+			window.DIFICULDADE_CORRIDA = btn.dataset.nivel;
+			document.getElementById("telaNivel").remove();
+			var script = document.createElement("script");
+			script.type = "module";
+			script.src = "js/main.js";
+			document.body.appendChild(script);
+		});
+	});
+</script>
+</body>
+</html>

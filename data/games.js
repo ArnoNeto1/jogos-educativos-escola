@@ -232,5 +232,21 @@ window.GAMES = [
     level: "Fundamental I • Raciocínio lógico",
     icon: "🀄",
     file: "games/ladrilhos-gemeos.html"
+  },
+  {
+    id: "corrida-kart",
+    title: "Corrida Kart",
+    subject: "Geral",
+    level: "Fundamental I • Coordenação",
+    icon: "🏎️",
+    file: "games/corrida-kart/index.html"
+  },
+  {
+    id: "desafio-java",
+    title: "Desafio Java",
+    subject: "Programação",
+    level: "Fundamental I e II • Lógica de programação",
+    icon: "☕",
+    file: "games/desafio-java.html"
   }
 ];

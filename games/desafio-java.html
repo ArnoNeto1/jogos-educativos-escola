@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desafio Java</title>
+<style>
+  :root { --azul:#2563eb; --laranja:#ea580c; --amarelo:#fbbf24; --verde:#22c55e; --vermelho:#ef4444; --fundo:#fff7ed; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    background: var(--fundo); color: #1e293b;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px;
+  }
+  a.voltar {
+    align-self: flex-start;
+    text-decoration: none; font-weight: 700; color: var(--laranja);
+    background: white; padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  h1 { margin: 10px 0 4px; text-align: center; }
+  .instrucoes { max-width: 520px; text-align: center; color: #475569; margin-bottom: 20px; font-size: 1rem; }
+  .cartao {
+    background: white; border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 16px rgba(234,88,12,0.14);
+    width: 100%; max-width: 560px; text-align: center;
+  }
+  .escondido { display: none !important; }
+  .progresso { font-weight: 700; color: #64748b; margin-bottom: 6px; }
+  .pontuacao-atual { font-weight: 700; color: var(--verde); margin-bottom: 16px; }
+  .cenario-icone { font-size: 2.6rem; margin-bottom: 6px; }
+  .cenario { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 14px; line-height: 1.4; text-align: left; }
+  .codigo {
+    background: #1e293b; color: #e2e8f0; border-radius: 12px; padding: 14px 16px;
+    font-family: "Consolas", "Courier New", monospace; font-size: 0.95rem; text-align: left;
+    margin-bottom: 18px; white-space: pre-wrap; line-height: 1.5;
+  }
+  .alternativas { display: flex; flex-direction: column; gap: 10px; }
+  .alt-btn {
+    background: var(--fundo); border: 2px solid transparent; border-radius: 14px;
+    font-size: 1rem; font-weight: 700; color: #1e293b;
+    padding: 14px 16px; cursor: pointer; text-align: left; line-height: 1.35;
+    font-family: inherit;
+  }
+  .alt-btn.codigo-alt { font-family: "Consolas", "Courier New", monospace; font-size: 0.9rem; }
+  .alt-btn:hover:not(:disabled) { border-color: var(--laranja); }
+  .alt-btn:disabled { cursor: default; }
+  .alt-btn.certa { background: var(--verde); color: white; }
+  .alt-btn.errada { background: var(--vermelho); color: white; }
+  .explicacao {
+    margin-top: 16px; padding: 14px 16px; border-radius: 14px;
+    background: #f8fafc; color: #334155; font-size: 0.95rem; line-height: 1.45; text-align: left;
+  }
+  .explicacao.certo { background: #dcfce7; }
+  .explicacao.errado { background: #fee2e2; }
+  button.acao {
+    background: var(--laranja); color: white; border: none; font-weight: 700; font-size: 1.05rem;
+    padding: 12px 30px; border-radius: 999px; cursor: pointer; margin-top: 18px;
+  }
+  .btn-nivel {
+    background: var(--fundo); border: none; border-radius: 14px;
+    font-size: 1.05rem; font-weight: 700; color: #1e293b;
+    padding: 16px; cursor: pointer; text-align: left;
+  }
+  .btn-nivel:hover { background: #ffedd5; }
+  .btn-nivel small { display: block; font-weight: 400; color: #64748b; font-size: 0.8rem; }
+  .resultado-titulo { font-size: 1.6rem; font-weight: 800; margin-bottom: 10px; }
+  .resultado-numero { font-size: 3rem; font-weight: 800; color: var(--laranja); margin-bottom: 6px; }
+  .resultado-percentual { color: #64748b; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<a class="voltar" href="../index.html">⬅ Voltar</a>
+<h1>☕ Desafio Java</h1>
+<p class="instrucoes">Aprenda como programadores pensam e, a partir do 4º ano, comece a ler código de verdade na linguagem Java!</p>
+
+<div class="cartao" id="telaNivel">
+  <h2 style="margin:0 0 16px; font-size:1.2rem;">Escolha o nível</h2>
+  <div style="display:flex; flex-direction:column; gap:12px;">
+    <button class="btn-nivel" data-nivel="facil">🟢 Fácil <small>(1º ao 3º ano) — lógica de programação, sem código</small></button>
+    <button class="btn-nivel" data-nivel="medio">🟡 Médio <small>(4º ao 6º ano) — primeiros comandos em Java</small></button>
+    <button class="btn-nivel" data-nivel="dificil">🔴 Difícil <small>(7º ao 9º ano) — laços, condições e funções em Java</small></button>
+  </div>
+</div>
+
+<div class="cartao escondido" id="telaJogo2">
+
+  <div id="telaQuiz">
+    <div class="progresso" id="progresso"></div>
+    <div class="pontuacao-atual" id="pontuacaoAtual"></div>
+    <div class="cenario-icone" id="cenarioIcone"></div>
+    <div class="cenario" id="cenario"></div>
+    <div class="codigo escondido" id="codigoBloco"></div>
+    <div class="alternativas" id="alternativas"></div>
+    <div class="explicacao escondido" id="explicacao"></div>
+    <button class="acao escondido" id="btnProxima">Próxima ➡️</button>
+  </div>
+
+  <div id="telaResultado" class="escondido">
+    <div class="resultado-titulo" id="resultadoTitulo"></div>
+    <div class="resultado-numero" id="resultadoNumero"></div>
+    <div class="resultado-percentual" id="resultadoPercentual"></div>
+    <button class="acao" id="btnJogarNovamente">🔄 Jogar novamente</button>
+  </div>
+
+</div>
+
+<script>
+  // Banco de perguntas — cada uma tem um ícone, o texto da pergunta, um bloco de código opcional
+  // (mostrado como se fosse um editor), as opções (a primeira do array "opcoes" é sempre a
+  // correta, em "indiceCorreto"), uma explicação, e um "nivel" (facil/medio/dificil, cumulativo).
+  // Nível fácil = lógica de programação em português, sem código de verdade (didático pra
+  // crianças pequenas). Médio e difícil já usam código real em Java, cada vez mais avançado.
+  var BANCO_PERGUNTAS = [
+    {
+      icone: "🍳",
+      cenario: "Pra fazer um bolo, você segue uma receita passo a passo, em ordem. Um programa de computador funciona parecido: é uma lista de instruções que o computador segue em ordem. Como se chama essa 'receita' de passos pra resolver um problema?",
+      opcoes: ["Um algoritmo", "Um vírus", "Uma senha"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Algoritmo é o nome que se dá pra uma sequência de passos organizados pra resolver um problema ou realizar uma tarefa — em programação, ou até numa receita de bolo!"
+    },
+    {
+      icone: "💻",
+      cenario: "O que é um 'programa de computador'?",
+      opcoes: ["Uma lista de instruções que o computador segue", "Um desenho colorido na tela", "Um tipo de vídeo"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Um programa é um conjunto de instruções escritas numa linguagem que o computador entende, dizendo exatamente o que ele deve fazer, passo a passo."
+    },
+    {
+      icone: "🗣️",
+      cenario: "Assim como as pessoas falam português, inglês ou espanhol, os programadores escrevem programas usando 'linguagens de programação'. Qual das opções abaixo é uma linguagem de programação usada pra criar jogos e aplicativos?",
+      opcoes: ["Java", "Libras", "Braille"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Java é uma linguagem de programação bem famosa, usada pra criar desde aplicativos de celular até jogos. Libras e Braille são formas importantes de comunicação, mas não são usadas pra programar computadores."
+    },
+    {
+      icone: "🐛",
+      cenario: "Quando um programa não funciona do jeito esperado e tem algum erro, os programadores chamam esse erro de 'bug' (que significa 'inseto' em inglês). O que é um bug?",
+      opcoes: ["Um erro no programa", "Um inseto de verdade dentro do computador", "Um novo jogo lançado"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "'Bug' é o apelido carinhoso (e antigo!) que os programadores dão pra qualquer erro que faz um programa não funcionar como deveria. Corrigir esses erros se chama 'debugar'."
+    },
+    {
+      icone: "🔁",
+      cenario: "Repetir uma mesma ação várias vezes seguidas — tipo 'pular 5 vezes' — é chamado de 'repetição' (ou 'loop', em inglês) na programação. Qual situação do dia a dia é parecida com um loop?",
+      opcoes: ["Quicar uma bola no chão 10 vezes seguidas", "Tomar café da manhã uma única vez", "Escovar os dentes uma vez de manhã"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Um loop (repetição) é quando a mesma ação se repete várias vezes — igual quicar a bola 10 vezes seguidas! Programas usam loops pra não precisar escrever o mesmo comando um monte de vezes."
+    },
+    {
+      icone: "🚦",
+      cenario: "Programas também tomam decisões: 'SE isso acontecer, ENTÃO faça aquilo'. Qual frase abaixo é um exemplo desse tipo de decisão?",
+      opcoes: ["Se o sinal estiver vermelho, então eu paro", "Eu gosto de pizza de calabresa", "O céu está azul hoje"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Frases do tipo 'SE... ENTÃO...' são chamadas de condições — o programa (ou você!) só faz uma coisa se uma condição específica for verdadeira, como parar quando o sinal está vermelho."
+    },
+    {
+      icone: "📋",
+      cenario: "Por que a ORDEM das instruções é importante num programa de computador?",
+      opcoes: ["Porque o computador faz exatamente o que foi escrito, na ordem certinha", "A ordem nunca importa, o computador sempre entende o que você quis dizer", "Só a última instrução do programa importa"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Diferente de nós, o computador não 'adivinha' a intenção — ele segue exatamente a ordem das instruções escritas. Se a ordem estiver errada, o resultado também sai errado."
+    },
+    {
+      icone: "🎮",
+      cenario: "Muitos dos jogos e aplicativos que você usa no celular ou computador foram criados por pessoas que escreveram, com muito cuidado, listas de instruções pro computador seguir. Como se chama essa profissão?",
+      opcoes: ["Programador(a)", "Cantor(a)", "Motorista"],
+      indiceCorreto: 0, nivel: "facil",
+      explicacao: "Programadores e programadoras são as pessoas que escrevem o código (as instruções) que fazem jogos, aplicativos e sites funcionarem."
+    },
+    {
+      icone: "☕",
+      cenario: "Em Java, qual comando mostra uma mensagem de texto na tela?",
+      opcoes: ['System.out.println("Oi!");', 'mostrar("Oi!")', "<print>Oi!</print>"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: 'O comando System.out.println(...) é o jeito padrão de mostrar (imprimir) um texto na tela em Java. O texto fica entre aspas.'
+    },
+    {
+      icone: "📦",
+      cenario: "Em Java, uma 'variável' é como uma caixinha com nome, que guarda um valor. Qual linha abaixo guarda o número 10 numa variável chamada idade?",
+      opcoes: ["int idade = 10;", "idade == 10", "10 = idade;"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "int idade = 10; cria uma variável chamada idade, do tipo número inteiro (int), e guarda o valor 10 nela. O sinal = serve pra 'guardar um valor', não pra comparar."
+    },
+    {
+      icone: "❗",
+      cenario: "Em Java, quase toda linha de comando termina com um sinal de pontuação. Qual é ele?",
+      opcoes: [";  (ponto e vírgula)", ".  (ponto final)", ":  (dois pontos)"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "O ponto e vírgula (;) marca o fim de um comando em Java, parecido com o ponto final marcando o fim de uma frase."
+    },
+    {
+      icone: "🖥️",
+      cenario: "O que aparece na tela depois que este código roda?",
+      codigo: 'System.out.println("Bom dia");',
+      opcoes: ["Bom dia", "System.out.println", "Nada aparece"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: 'O comando System.out.println mostra na tela exatamente o texto que está entre aspas — nesse caso, "Bom dia".'
+    },
+    {
+      icone: "🏷️",
+      cenario: "Em Java, palavras como int, String e boolean, usadas ao criar uma variável, servem pra indicar:",
+      opcoes: ["Que tipo de informação a variável vai guardar (número, texto, verdadeiro/falso...)", "O nome do programador que escreveu o código", "A cor que vai aparecer na tela"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: "Esses são os 'tipos' das variáveis: int guarda números inteiros, String guarda textos, e boolean guarda verdadeiro (true) ou falso (false)."
+    },
+    {
+      icone: "📝",
+      cenario: "Qual das opções abaixo é uma forma correta de guardar um texto (não um número) numa variável chamada nome, em Java?",
+      opcoes: ['String nome = "Ana";', 'int nome = "Ana";', "nome = Ana;"],
+      indiceCorreto: 0, nivel: "medio",
+      explicacao: 'Textos em Java usam o tipo String, e o texto em si vai sempre entre aspas — como "Ana". O tipo int é só pra números inteiros.'
+    },
+    {
+      icone: "🔢",
+      cenario: "Quantas vezes a palavra 'Oi' aparece na tela depois de rodar este código?",
+      codigo: 'for (int i = 0; i < 5; i++) {\n  System.out.println("Oi");\n}',
+      opcoes: ["5 vezes", "4 vezes", "Infinitas vezes"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "Esse é um laço de repetição (for) que começa em i=0 e repete enquanto i for menor que 5 (ou seja, pra i = 0, 1, 2, 3 e 4) — são exatamente 5 repetições."
+    },
+    {
+      icone: "🔍",
+      cenario: "Esse código tem um erro de sintaxe (ele não vai funcionar). Qual é o erro?",
+      codigo: "int total = 10",
+      opcoes: ["Falta o ponto e vírgula (;) no final da linha", "Falta um emoji no código", "Está tudo certo, não tem erro nenhum"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "Toda instrução em Java precisa terminar com ponto e vírgula. Sem ele, o programa não compila e mostra uma mensagem de erro."
+    },
+    {
+      icone: "🧩",
+      cenario: "Em Java, um 'método' (também chamado de função) é:",
+      opcoes: ["Um bloco de código com um nome, que pode ser chamado (usado) várias vezes pra fazer uma tarefa", "Um tipo de erro grave no programa", "O nome do arquivo onde o código foi salvo"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "Métodos (funções) deixam o código mais organizado: em vez de repetir o mesmo bloco de instruções várias vezes, você escreve ele uma vez, dá um nome, e 'chama' esse nome sempre que precisar."
+    },
+    {
+      icone: "✅",
+      cenario: "O que este código faz?",
+      codigo: 'if (nota >= 7) {\n  System.out.println("Aprovado");\n} else {\n  System.out.println("Reprovado");\n}',
+      opcoes: ["Mostra 'Aprovado' se a nota for 7 ou mais; senão, mostra 'Reprovado'", "Sempre mostra as duas mensagens juntas", "Dá erro sempre que roda"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "O if testa a condição (nota >= 7). Se for verdadeira, roda o bloco de dentro do if ('Aprovado'). Se for falsa, roda o bloco do else ('Reprovado')."
+    },
+    {
+      icone: "🔀",
+      cenario: "Qual é a principal diferença entre um laço for e um laço while em Java?",
+      opcoes: ["O for costuma repetir um número já definido de vezes; o while repete enquanto uma condição continuar verdadeira", "Não existe diferença nenhuma entre eles", "O for só funciona com textos, nunca com números"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "Os dois servem pra repetir código, mas o for é mais usado quando já se sabe quantas vezes repetir, e o while quando a repetição depende de uma condição que pode mudar."
+    },
+    {
+      icone: "🔘",
+      cenario: "O que o tipo boolean guarda, em Java?",
+      opcoes: ["Só dois valores possíveis: verdadeiro (true) ou falso (false)", "Qualquer texto, de qualquer tamanho", "Sons e músicas"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "boolean é o tipo mais simples: ele só pode valer true (verdadeiro) ou false (falso) — muito usado em condições, como dentro de um if."
+    },
+    {
+      icone: "➕",
+      cenario: "Depois de rodar este código, qual é o valor final da variável total?",
+      codigo: "int total = 0;\nfor (int i = 1; i <= 3; i++) {\n  total = total + i;\n}",
+      opcoes: ["6", "3", "0"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "O laço soma total = total + i pra i = 1, depois i = 2, depois i = 3. Começando em 0: 0+1=1, 1+2=3, 3+3=6. O resultado final é 6."
+    },
+    {
+      icone: "➗",
+      cenario: "O que o símbolo % (chamado de 'módulo' ou 'resto') faz em Java? Por exemplo, o que vale 10 % 3?",
+      opcoes: ["Dá o resto da divisão — nesse caso, 1", "Multiplica os dois números — nesse caso, 30", "Sempre dá zero, não importa os números"],
+      indiceCorreto: 0, nivel: "dificil",
+      explicacao: "O operador % calcula o resto de uma divisão. 10 dividido por 3 dá 3, e sobra 1 — então 10 % 3 é igual a 1. É muito usado, por exemplo, pra descobrir se um número é par ou ímpar."
+    }
+  ];
+
+  var NIVEIS = {
+    facil: { rodadas: 6, niveisIncluidos: ["facil"] },
+    medio: { rodadas: 8, niveisIncluidos: ["facil", "medio"] },
+    dificil: { rodadas: 10, niveisIncluidos: ["facil", "medio", "dificil"] }
+  };
+  var nivelEscolhido = "medio";
+
+  var telaQuiz = document.getElementById("telaQuiz");
+  var telaResultado = document.getElementById("telaResultado");
+  var progressoEl = document.getElementById("progresso");
+  var pontuacaoAtualEl = document.getElementById("pontuacaoAtual");
+  var cenarioIconeEl = document.getElementById("cenarioIcone");
+  var cenarioEl = document.getElementById("cenario");
+  var codigoBlocoEl = document.getElementById("codigoBloco");
+  var alternativasEl = document.getElementById("alternativas");
+  var explicacaoEl = document.getElementById("explicacao");
+  var btnProxima = document.getElementById("btnProxima");
+  var resultadoTitulo = document.getElementById("resultadoTitulo");
+  var resultadoNumero = document.getElementById("resultadoNumero");
+  var resultadoPercentual = document.getElementById("resultadoPercentual");
+  var btnJogarNovamente = document.getElementById("btnJogarNovamente");
+
+  var rodadas = [];
+  var indiceAtual = 0;
+  var acertos = 0;
+
+  function embaralhar(lista) {
+    var copia = lista.slice();
+    for (var i = copia.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copia[i]; copia[i] = copia[j]; copia[j] = temp;
+    }
+    return copia;
+  }
+
+  function prepararPergunta(pergunta) {
+    // embaralha a ordem das opções, guardando qual é a correta
+    var opcoesComIndice = pergunta.opcoes.map(function (texto, i) { return { texto: texto, correta: i === pergunta.indiceCorreto }; });
+    var embaralhadas = embaralhar(opcoesComIndice);
+    return { icone: pergunta.icone, cenario: pergunta.cenario, codigo: pergunta.codigo || null, explicacao: pergunta.explicacao, opcoes: embaralhadas };
+  }
+
+  function iniciarQuiz(nivel) {
+    if (nivel) nivelEscolhido = nivel;
+    var config = NIVEIS[nivelEscolhido];
+    var pool = BANCO_PERGUNTAS.filter(function (p) { return config.niveisIncluidos.indexOf(p.nivel) !== -1; });
+    var banco = embaralhar(pool).slice(0, config.rodadas);
+    rodadas = banco.map(prepararPergunta);
+    indiceAtual = 0;
+    acertos = 0;
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaNivel").classList.add("escondido");
+    document.getElementById("telaJogo2").classList.remove("escondido");
+    telaQuiz.classList.remove("escondido");
+    mostrarPergunta();
+  }
+
+  function mostrarPergunta() {
+    var r = rodadas[indiceAtual];
+    progressoEl.textContent = "Pergunta " + (indiceAtual + 1) + " de " + rodadas.length;
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    cenarioIconeEl.textContent = r.icone;
+    cenarioEl.textContent = r.cenario;
+
+    if (r.codigo) {
+      codigoBlocoEl.textContent = r.codigo;
+      codigoBlocoEl.classList.remove("escondido");
+    } else {
+      codigoBlocoEl.classList.add("escondido");
+    }
+
+    explicacaoEl.classList.add("escondido");
+    explicacaoEl.className = "explicacao escondido";
+    btnProxima.classList.add("escondido");
+
+    // opções que parecem trecho de código ganham fonte monoespaçada
+    var pareceCodigo = /[{}();=]/;
+
+    alternativasEl.innerHTML = "";
+    r.opcoes.forEach(function (opcao) {
+      var btn = document.createElement("button");
+      btn.className = "alt-btn" + (pareceCodigo.test(opcao.texto) ? " codigo-alt" : "");
+      btn.textContent = opcao.texto;
+      btn.addEventListener("click", function () { responder(opcao.correta, btn, r); });
+      alternativasEl.appendChild(btn);
+    });
+  }
+
+  function responder(foiCorreta, botaoClicado, r) {
+    var botoes = alternativasEl.querySelectorAll(".alt-btn");
+    botoes.forEach(function (b) { b.disabled = true; });
+
+    if (foiCorreta) {
+      acertos++;
+      botaoClicado.classList.add("certa");
+    } else {
+      botaoClicado.classList.add("errada");
+      botoes.forEach(function (b, i) {
+        if (r.opcoes[i].correta) b.classList.add("certa");
+      });
+    }
+
+    explicacaoEl.textContent = (foiCorreta ? "✅ " : "💡 ") + r.explicacao;
+    explicacaoEl.className = "explicacao " + (foiCorreta ? "certo" : "errado");
+    explicacaoEl.classList.remove("escondido");
+    pontuacaoAtualEl.textContent = "Acertos: " + acertos;
+    btnProxima.classList.remove("escondido");
+  }
+
+  function avancar() {
+    indiceAtual++;
+    if (indiceAtual < rodadas.length) {
+      mostrarPergunta();
+    } else {
+      mostrarResultado();
+    }
+  }
+
+  function mostrarResultado() {
+    telaQuiz.classList.add("escondido");
+    telaResultado.classList.remove("escondido");
+
+    var percentual = Math.round((acertos / rodadas.length) * 100);
+    resultadoNumero.textContent = acertos + " / " + rodadas.length;
+    resultadoPercentual.textContent = percentual + "% de acerto";
+
+    if (percentual >= 80) resultadoTitulo.textContent = "☕ Você programa que nem gente grande!";
+    else if (percentual >= 50) resultadoTitulo.textContent = "👏 Muito bem, continue praticando!";
+    else resultadoTitulo.textContent = "💪 Vamos revisar esses comandos de novo!";
+  }
+
+  btnProxima.addEventListener("click", avancar);
+  btnJogarNovamente.addEventListener("click", function () {
+    telaResultado.classList.add("escondido");
+    document.getElementById("telaJogo2").classList.add("escondido");
+    document.getElementById("telaNivel").classList.remove("escondido");
+  });
+
+  document.querySelectorAll(".btn-nivel").forEach(function (btn) {
+    btn.addEventListener("click", function () { iniciarQuiz(btn.dataset.nivel); });
+  });
+</script>
+</body>
+</html>
