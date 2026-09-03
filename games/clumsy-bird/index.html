@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<html lang="pt-BR">
+    <head>
+        <!--
+          Jogo original "Clumsy Bird", criado por Ellison Leão
+          (github.com/ellisonleao/clumsy-bird), um clone de Flappy Bird feito
+          com o motor MelonJS. Código sob licença GPLv3 (ver arquivo
+          LICENSE.md nesta pasta - o projeto foi relicenciado de MIT para
+          GPLv3 pelo próprio autor em 2017) - usado aqui com autorização da
+          licença. Os textos do jogo foram traduzidos para português (as
+          telas "Get Ready!!", "Game Over" e "New" eram imagens com texto em
+          inglês; foram substituídas por texto desenhado na mesma fonte
+          pixelada do jogo - ver comentários em js/screens/*.js).
+        -->
+        <title>Clumsy Bird</title>
+        <link rel="apple-touch-icon-precomposed" href="data/img/touch-icon-iphone.png"/>
+        <link rel="apple-touch-icon-precomposed" sizes="120x120" href="data/img/touch-icon-iphone-retina.png"/>
+        <link rel="shortcut icon" href="data/img/favicon.ico">
+        <link rel="stylesheet" type="text/css" media="screen" href="index.css">
+        <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <meta name="apple-mobile-web-app-title" content="Clumsy Bird">
+        <meta charset="UTF-8" />
+        <meta name="description" content="Clumsy Bird - um clone de Flappy Bird feito com o motor MelonJS"/>
+        <meta name="keywords" content="flappybird, flappy, bird, jogo, html5, melonjs, clone"/>
+        <meta name="robots" content="noindex, nofollow">
+        <meta property="og:title" content="Clumsy Bird"/>
+        <meta property="og:description" content="Um clone de Flappy Bird feito com o motor MelonJS."/>
+
+        <style>
+          .voltar-overlay {
+            position: fixed; top: 10px; left: 10px; z-index: 10000;
+            text-decoration: none; font-weight: 700; color: #2563eb;
+            background: white; padding: 8px 16px; border-radius: 999px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+          }
+        </style>
+    </head>
+
+    <body>
+        <a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+
+        <!-- Canvas placeholder -->
+        <div id="screen"></div>
+
+        <!-- melonJS Library -->
+        <script type="text/javascript" src="js/melonJS-min.js" ></script>
+        <script type="text/javascript" src="build/clumsy-min.js" ></script>
+        <script type="text/javascript">
+            window.onReady(function onReady() {
+                game.onload();
+            });
+        </script>
+
+    </body>
+</html>

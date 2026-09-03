@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <!--
+          Jogo original "Survivor" (canvas-vampire-survivors), criado pelos
+          colaboradores do projeto Survivor / ricardo-foundry. Código sob
+          licença MIT (ver arquivo LICENSE nesta pasta) - usado aqui com
+          autorização da licença, sem modificações na jogabilidade original.
+          Repositório original: https://github.com/ricardo-foundry/canvas-vampire-survivors
+        -->
+        <style>
+          .voltar-overlay {
+            position: fixed; top: 10px; left: 10px; z-index: 10000;
+            text-decoration: none; font-weight: 700; color: #2563eb;
+            background: white; padding: 8px 16px; border-radius: 999px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+          }
+        </style>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta name="color-scheme" content="dark" />
+        <meta name="theme-color" content="#1b1330" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+            name="description"
+            content="Roguelite de código aberto em HTML5 Canvas, inspirado em Vampire Survivors. Sem dependências, roda em qualquer navegador moderno."
+        />
+        <title>Survivor — Roguelite de Código Aberto</title>
+
+        <!-- Canonical + favicon (SVG keeps the bundle dependency-free) -->
+        <link rel="canonical" href="https://ricardo-foundry.github.io/canvas-vampire-survivors/" />
+        <link rel="icon" type="image/svg+xml" href="./docs/hero.svg" />
+        <link rel="manifest" href="./manifest.json" />
+
+        <!-- Open Graph / social share -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Survivor — Roguelite de Código Aberto" />
+        <meta
+            property="og:description"
+            content="Roguelite em HTML5 Canvas sem dependências. Sobreviva, evolua e derrote os chefes."
+        />
+        <meta property="og:image" content="./docs/og-card.svg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta
+            property="og:url"
+            content="https://ricardo-foundry.github.io/canvas-vampire-survivors/"
+        />
+
+        <!-- Twitter card -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Survivor — Roguelite de Código Aberto" />
+        <meta
+            name="twitter:description"
+            content="Roguelite em HTML5 Canvas sem dependências. Sobreviva, evolua e derrote os chefes."
+        />
+        <meta name="twitter:image" content="./docs/og-card.svg" />
+
+        <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+        <a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+        <div id="gameContainer" aria-label="Jogo Survivor">
+            <canvas
+                id="gameCanvas"
+                width="1200"
+                height="800"
+                tabindex="0"
+                aria-label="Tela do jogo"
+            ></canvas>
+
+            <div id="ui" role="presentation">
+                <div id="topLeft" class="hud">
+                    <div><span data-i18n="level">LEVEL</span>: <span id="level">1</span></div>
+                    <div class="bar-label" data-i18n="xp">XP</div>
+                    <div class="exp-bar">
+                        <div class="exp-fill" id="expBar" style="width: 0%"></div>
+                    </div>
+                    <div class="bar-label">
+                        <span data-i18n="time">TIME</span>: <span id="time">00:00</span>
+                    </div>
+                    <div id="waveLabel" class="hud-sub"></div>
+                    <div id="highScore" class="hud-sub"></div>
+                </div>
+
+                <div id="topRight" class="hud">
+                    <div><span data-i18n="kills">KILLS</span>: <span id="kills">0</span></div>
+                    <div id="fpsCounter" class="hud-sub" style="display: none">0 fps</div>
+                    <button id="btnPause" class="icon-btn" aria-label="Pausar">⏸</button>
+                </div>
+
+                <div id="bottomLeft" class="hud">
+                    <div>
+                        <span data-i18n="hp">HP</span>: <span id="hp">100</span>/<span id="maxHp"
+                            >100</span
+                        >
+                    </div>
+                    <div class="hp-bar">
+                        <div class="hp-fill" id="hpBar" style="width: 100%"></div>
+                    </div>
+                    <div class="chip-row" id="passiveIcons" role="list" aria-label="Passivas"></div>
+                </div>
+
+                <div
+                    class="chip-row weapon-icons"
+                    id="weaponIcons"
+                    role="list"
+                    aria-label="Armas"
+                ></div>
+
+                <div id="bossBanner" class="boss-banner" aria-live="polite"></div>
+
+                <div
+                    id="achievementToasts"
+                    class="ach-toast-host"
+                    aria-live="polite"
+                    aria-atomic="false"
+                ></div>
+
+                <!--
+                    Visually-hidden live region. All gameplay events with
+                    meaningful accessibility signal (boss incoming, level-up,
+                    achievement unlock, boss defeated) are mirrored into this
+                    paragraph so screen readers announce them. See
+                    docs/ACCESSIBILITY.md for the full list.
+                -->
+                <p
+                    id="a11yLiveRegion"
+                    class="sr-only"
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                ></p>
+            </div>
+
+            <!-- Virtual joystick (touch only) -->
+            <div id="joystickBase" class="joystick" aria-hidden="true">
+                <div id="joystickKnob" class="joystick-knob"></div>
+            </div>
+
+            <!-- iter-14: special-skill button (touch only). Bottom-right counterpart
+                 to the joystick on mobile. Opens the pause menu by default until
+                 per-build skills are wired in. -->
+            <button
+                id="specialSkillBtn"
+                class="special-skill-btn"
+                aria-label="Habilidade especial"
+                aria-hidden="true"
+            >
+                ✦
+            </button>
+
+            <!-- iter-14: PWA install prompt. Shown once on first load on a browser
+                 that fires `beforeinstallprompt`; dismissed forever once the user
+                 acts on it. -->
+            <div
+                id="pwaInstallPrompt"
+                class="pwa-install-prompt"
+                role="dialog"
+                aria-live="polite"
+                style="display: none"
+            >
+                <span>Instale o Survivor como app para jogar em tela cheia.</span>
+                <button id="pwaInstallBtn" class="btn primary">Instalar</button>
+                <button id="pwaInstallDismiss" class="btn">Agora não</button>
+            </div>
+
+            <!-- Menus -->
+            <div
+                id="startScreen"
+                class="overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="startTitle"
+            >
+                <div class="overlay-card">
+                    <h1 id="startTitle" data-i18n="title">SURVIVOR</h1>
+                    <div class="subtitle" data-i18n="subtitle">
+                        Vampire Survivors style roguelite
+                    </div>
+                    <div class="instructions">
+                        <div><strong data-i18n="howToPlay">How to play</strong></div>
+                        <div>• <span data-i18n="move">WASD / arrow keys to move</span></div>
+                        <div>
+                            • <span data-i18n="autoAttack">Weapons auto-attack nearby foes</span>
+                        </div>
+                        <!-- Not wired to data-i18n upstream; translated directly. -->
+                        <div>• Esc / P para pausar</div>
+                        <div>• <span data-i18n="survive">Survive as long as you can!</span></div>
+                    </div>
+                    <div class="btn-row">
+                        <button id="btnStart" class="btn primary" data-i18n="start">
+                            Start Run
+                        </button>
+                        <button
+                            id="btnStage"
+                            class="btn ghost"
+                            data-i18n="stage"
+                            aria-describedby="btnStageChip"
+                        >
+                            Stage <span id="btnStageChip" class="stage-chip">🌲 Whisperwood</span>
+                        </button>
+                        <button id="btnDaily" class="btn ghost" data-i18n="dailyChallenge">
+                            Daily Challenge
+                        </button>
+                        <button id="btnViewStreak" class="btn ghost" data-i18n="viewStreak">
+                            View Streak
+                        </button>
+                        <button id="btnSpeedrun" class="btn ghost" data-i18n="speedrun">
+                            Speedrun
+                        </button>
+                        <button id="btnLeaderboard" class="btn ghost" data-i18n="leaderboard">
+                            Leaderboard
+                        </button>
+                        <button id="btnSettings" class="btn ghost" data-i18n="settings">
+                            Settings
+                        </button>
+                        <button id="btnAchievements" class="btn ghost" data-i18n="viewAchievements">
+                            View Achievements
+                        </button>
+                        <button id="btnHowTo" class="btn ghost" data-i18n="howToPlayBtn">
+                            How to Play
+                        </button>
+                        <button id="btnTutorial" class="btn ghost" data-i18n="tryTutorial">
+                            Try Tutorial
+                        </button>
+                        <button id="btnReplay" class="btn ghost" data-i18n="replayLastRun">
+                            Replay Last Run
+                        </button>
+                    </div>
+                    <div class="hotkey-hint" aria-hidden="true">
+                        <!--
+                          Plain text on purpose: onLocaleChanged() (ui.js)
+                          only rewrites an i18n-tagged element's leading text
+                          node, so a mix of text + <kbd> tags here would leave
+                          the original English badges stuck after a language
+                          switch. The `hotkeyHint` translation spells the keys
+                          out inline instead (see i18n.js).
+                        -->
+                        <span data-i18n="hotkeyHint">Tip: P/Esc pause · M mute · H help</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="achievementsScreen" class="overlay" style="display: none"></div>
+            <div id="leaderboardScreen" class="overlay" style="display: none"></div>
+            <div id="stagePickerScreen" class="overlay" style="display: none"></div>
+            <div id="streakScreen" class="overlay" style="display: none"></div>
+            <div id="helpScreen" class="overlay" style="display: none"></div>
+            <div id="howToPlayScreen" class="overlay" style="display: none"></div>
+
+            <div
+                id="levelUpMenu"
+                class="overlay"
+                style="display: none"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="levelUpTitle"
+            >
+                <div class="overlay-card levelup">
+                    <h2 id="levelUpTitle" data-i18n="chooseUpgrade">Choose an upgrade</h2>
+                    <div id="upgradeOptions" role="menu"></div>
+                </div>
+            </div>
+
+            <div
+                id="pauseMenu"
+                class="overlay"
+                style="display: none"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="pauseTitle"
+            >
+                <div class="overlay-card">
+                    <h2 id="pauseTitle" data-i18n="paused">PAUSED</h2>
+                    <div class="btn-row vertical">
+                        <button id="btnResume" class="btn primary" data-i18n="resume">
+                            Resume
+                        </button>
+                        <button id="btnQuit" class="btn ghost" data-i18n="quit">
+                            Quit to Menu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                id="gameOver"
+                class="overlay"
+                style="display: none"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="gameOverTitle"
+            >
+                <div class="overlay-card gameover">
+                    <h1 id="gameOverTitle" data-i18n="gameover">YOU DIED</h1>
+                    <div class="stats">
+                        <div>
+                            <span data-i18n="finalTime">Survived</span>:
+                            <span id="finalTime">00:00</span>
+                        </div>
+                        <div>
+                            <span data-i18n="finalKills">Kills</span>:
+                            <span id="finalKills">0</span>
+                        </div>
+                        <div>
+                            <span data-i18n="finalLevel">Level</span>:
+                            <span id="finalLevel">1</span>
+                        </div>
+                    </div>
+                    <details class="hs-details">
+                        <summary data-i18n="highScores">High Scores</summary>
+                        <div id="highScoreList" class="hs-list"></div>
+                    </details>
+                    <div class="btn-row">
+                        <button id="btnRetry" class="btn primary" data-i18n="retry">Retry</button>
+                        <button id="btnMenu" class="btn ghost" data-i18n="mainMenu">
+                            Main Menu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settingsMenu" class="overlay" style="display: none"></div>
+        </div>
+
+        <script type="module">
+            import { boot } from './src/main.js';
+            const game = boot();
+            // Pause button (UI click) mirrors Esc.
+            document
+                .getElementById('btnPause')
+                ?.addEventListener('click', () => game.togglePause());
+        </script>
+
+        <!-- Optional offline support. SW registration is a no-op on file:// -->
+        <script>
+            if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker
+                        .register('./service-worker.js')
+                        .catch((err) => console.warn('[sw] registration failed', err));
+                });
+            }
+        </script>
+    </body>
+</html>

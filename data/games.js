@@ -250,19 +250,27 @@ window.GAMES = [
     file: "games/desafio-java.html"
   },
   {
-    id: "home",
-    title: "Home",
-    subject: "Geral",
-    level: "Fundamental I e II • Aventura/plataforma",
-    icon: "👽",
-    file: "games/home/index.html"
-  },
-  {
     id: "ouro",
     title: "Ouro",
     subject: "Geral",
     level: "Fundamental I • Reflexo",
     icon: "🐍",
     file: "games/ouro/index.html"
+  },
+  {
+    id: "survivor",
+    title: "Survivor",
+    subject: "Geral",
+    level: "Fundamental II • Ação/Sobrevivência",
+    icon: "🧛",
+    file: "games/survivor/index.html"
+  },
+  {
+    id: "clumsy-bird",
+    title: "Clumsy Bird",
+    subject: "Geral",
+    level: "Fundamental I • Reflexo",
+    icon: "🐦",
+    file: "games/clumsy-bird/index.html"
   }
 ];

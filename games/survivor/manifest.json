@@ -1,0 +1,27 @@
+{
+    "name": "Survivor — Roguelite de Código Aberto",
+    "short_name": "Survivor",
+    "description": "Roguelite de código aberto em HTML5 Canvas, inspirado em Vampire Survivors. Roda em qualquer navegador moderno.",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "fullscreen",
+    "orientation": "landscape",
+    "theme_color": "#1b1330",
+    "background_color": "#0a0a12",
+    "categories": ["games", "entertainment"],
+    "lang": "pt-BR",
+    "icons": [
+        {
+            "src": "./docs/hero.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "./docs/og-card.svg",
+            "sizes": "1200x630",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}
