@@ -248,5 +248,21 @@ window.GAMES = [
     level: "Fundamental I e II • Lógica de programação",
     icon: "☕",
     file: "games/desafio-java.html"
+  },
+  {
+    id: "home",
+    title: "Home",
+    subject: "Geral",
+    level: "Fundamental I e II • Aventura/plataforma",
+    icon: "👽",
+    file: "games/home/index.html"
+  },
+  {
+    id: "ouro",
+    title: "Ouro",
+    subject: "Geral",
+    level: "Fundamental I • Reflexo",
+    icon: "🐍",
+    file: "games/ouro/index.html"
   }
 ];
