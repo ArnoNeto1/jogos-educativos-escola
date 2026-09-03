@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidade</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .conteudo {
+    max-width: 760px; margin: -30px auto 60px; padding: 0 20px 40px;
+    background: var(--branco); border-radius: var(--raio); box-shadow: var(--sombra);
+  }
+  .conteudo-interno { padding: 30px 34px; line-height: 1.6; }
+  .conteudo h2 { color: var(--azul-escuro); margin-top: 28px; }
+  .conteudo h2:first-child { margin-top: 0; }
+  .conteudo a { color: var(--azul); }
+  .voltar-link {
+    display: inline-block; margin: 20px 0 0 20px;
+    text-decoration: none; font-weight: 700; color: var(--azul);
+    background: var(--branco); padding: 8px 16px; border-radius: 999px; box-shadow: var(--sombra);
+  }
+  .atualizado { color: #64748b; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<a class="voltar-link" href="index.html">⬅ Voltar</a>
+
+<div class="conteudo">
+  <div class="conteudo-interno">
+    <h1>Política de Privacidade</h1>
+    <p class="atualizado">Última atualização: setembro de 2026</p>
+
+    <p>Este site (Jogos Educativos da Escola) é um portal gratuito de jogos educativos
+    voltado para alunos do Ensino Fundamental. Esta página explica, de forma simples,
+    o que acontece com as informações de quem usa o site.</p>
+
+    <h2>O que NÃO fazemos</h2>
+    <p>Não pedimos cadastro, login, e-mail ou qualquer dado pessoal dos alunos pra jogar.
+    A grande maioria dos jogos não guarda nenhuma informação em nenhum servidor — o que
+    fica salvo (como recordes pessoais) fica só no próprio navegador do aluno
+    (<code>localStorage</code>), sem sair do aparelho.</p>
+
+    <h2>Placar compartilhado e multiplayer</h2>
+    <p>Alguns jogos têm um placar da turma ou um modo de jogar em rede com colegas. Pra
+    isso, usamos o <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a>,
+    um serviço de banco de dados. No placar, cada aluno recebe automaticamente um apelido
+    genérico gerado pelo site (tipo "Panda Veloz 42") — o site nunca pede nem guarda o
+    nome verdadeiro do aluno. No modo de jogar em rede, só as jogadas (ex.: "joguei na
+    casa 5") são compartilhadas com o colega da mesma sala, em tempo real, sem ficarem
+    salvas depois que a partida termina.</p>
+
+    <h2>Anúncios</h2>
+    <p>Este site pode exibir anúncios fornecidos pelo Google AdSense, como forma de gerar
+    uma renda extra para a escola. Como o site é voltado para crianças, ele está
+    configurado para exibir <strong>apenas anúncios não personalizados</strong> — ou seja,
+    o Google não usa navegação anterior, interesses ou dados pessoais do aluno pra
+    escolher qual anúncio mostrar, conforme as regras de proteção de dados de crianças
+    (no Brasil, o ECA e a LGPD; nos Estados Unidos, a COPPA). Mesmo anúncios não
+    personalizados podem envolver informações técnicas básicas (como o tipo de
+    navegador), processadas pelo Google conforme a
+    <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Política de Privacidade do Google</a>.</p>
+
+    <h2>Cookies</h2>
+    <p>O site em si não usa cookies próprios. Serviços de terceiros usados aqui (Google
+    AdSense e Supabase) podem usar cookies ou tecnologias parecidas pra funcionar
+    corretamente — nenhum deles é usado pra rastrear o aluno por outros sites.</p>
+
+    <h2>Dúvidas</h2>
+    <p>Pais, responsáveis e professores podem entrar em contato com a escola pra
+    esclarecer qualquer dúvida sobre este site.</p>
+  </div>
+</div>
+
+</body>
+</html>

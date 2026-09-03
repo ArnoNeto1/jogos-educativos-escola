@@ -1,7 +1,7 @@
 # Jogos Educativos da Escola
 
-Portal simples de jogos educativos (HTML/CSS/JS puro, sem frameworks, sem anúncios,
-sem coleta de dados) para os alunos jogarem no navegador.
+Portal simples de jogos educativos (HTML/CSS/JS puro, sem frameworks, sem coleta
+de dados pessoais) para os alunos jogarem no navegador.
 
 ## Níveis de dificuldade
 
@@ -238,6 +238,26 @@ qualquer pessoa tecnicamente consegue enviar uma pontuação falsa direto pelo
 código (não tem como impedir isso 100% sem exigir conta de aluno, o que fugiria
 da proposta "sem cadastro" do site). Pra uma brincadeira de sala de aula isso
 não costuma ser problema, mas não é um placar "à prova de trapaça".
+
+## Anúncios (Google AdSense)
+
+O site pode exibir anúncios do Google AdSense na página inicial, como forma de gerar
+uma renda extra pra escola. Como o público é infantil, o site foi marcado como
+**"conteúdo direcionado a crianças"** no AdSense — isso desativa anúncios
+personalizados automaticamente (exigência legal: COPPA nos EUA, alinhado com o
+ECA/LGPD no Brasil).
+
+Pra ativar/atualizar isso:
+1. Crie/gerencie a conta em [google.com/adsense](https://www.google.com/adsense) —
+   confirme que **"Tratamento direcionado a crianças"** está marcado como "Sim" nas
+   configurações do site.
+2. Cole o código de verificação (`ca-pub-...`) e os códigos dos blocos de anúncio no
+   `index.html` (procure o comentário `<!-- AdSense -->`).
+3. Foi criada uma [Política de Privacidade](privacidade.html) obrigatória pro
+   AdSense — mantenha ela atualizada se algo mudar em como o site funciona.
+
+Os jogos individuais (dentro de `games/`) não têm anúncios — só a página inicial —
+pra não distrair o aluno durante a partida.
 
 ## Adicionar um novo jogo
 
