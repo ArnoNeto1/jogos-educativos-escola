@@ -272,5 +272,13 @@ window.GAMES = [
     level: "Fundamental I • Reflexo",
     icon: "🐦",
     file: "games/clumsy-bird/index.html"
+  },
+  {
+    id: "duelo-relampago",
+    title: "Duelo Relâmpago",
+    subject: "Geral",
+    level: "Fundamental I e II • Reflexo",
+    icon: "⚡",
+    file: "https://duelo-relampago.lovable.app"
   }
 ];
