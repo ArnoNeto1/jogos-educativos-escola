@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<html lang="pt-BR">
+<!--
+  Jogo original "DuckHunt-JS", criado por Matt Surabian
+  (github.com/MattSurabian/DuckHunt-JS). Codigo sob licenca MIT (ver
+  arquivo LICENSE nesta pasta). Recriacao cartunesca do classico Duck
+  Hunt do NES, com editor de fases embutido. Traduzido para pt-BR
+  (recompilado a partir do codigo-fonte com "npm run build" apos as
+  traducoes).
+  Repositorio original: https://github.com/MattSurabian/DuckHunt-JS
+-->
+<head>
+  <title>Caça aos Patos</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="Uma recriação de código aberto do clássico jogo de caça aos patos.">
+  <meta name="author" content="Matt Surabian">
+  <style>
+    body {
+      overflow:hidden;
+      margin: 0;
+      padding: 0;
+      background-color: #000000;
+    }
+    .voltar-overlay {
+      position: fixed; top: 10px; left: 10px; z-index: 10000;
+      text-decoration: none; font-weight: 700; color: #2563eb;
+      background: white; padding: 8px 16px; border-radius: 999px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+    }
+  </style>
+  <script src="duckhunt.js"></script>
+</head>
+<body>
+<a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR" dir="ltr">
+<!--
+  Jogo original "Asteroids" (clone do classico jogo de nave contra
+  asteroides), criado por James Socol (github.com/jsocol/asteroids).
+  Codigo sob licenca BSD-2-Clause (ver arquivo LICENSE.txt nesta
+  pasta), sem assets externos - tudo desenhado via Canvas. Exibido
+  aqui como "Nave Espacial" para evitar o uso do nome "Asteroids"
+  (marca registrada da Atari) na vitrine do site - o proprio autor
+  original reconhece isso no README do repositorio. Traduzido para
+  pt-BR.
+  Repositorio original: https://github.com/jsocol/asteroids
+-->
+<head>
+  <meta http-equiv="Content-type" content="text/html;charset=utf-8"/>
+  <title>Nave Espacial</title>
+  <link rel="stylesheet" href="style.css" type="text/css"/>
+  <style>
+    .voltar-overlay {
+      position: fixed; top: 10px; left: 10px; z-index: 10000;
+      text-decoration: none; font-weight: 700; color: #2563eb;
+      background: white; padding: 8px 16px; border-radius: 999px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+<a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+<div id="asteroids">Carregando...</div>
+
+<script src="asteroids.js" type="text/ecmascript"></script>
+</body>
+</html>

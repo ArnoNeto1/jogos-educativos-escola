@@ -376,5 +376,69 @@ window.GAMES = [
     level: "Fundamental I e II • Corrida",
     icon: "🏎️",
     file: "games/huejumper/index.html"
+  },
+  {
+    id: "particle-clicker",
+    title: "Particle Clicker",
+    subject: "Ciências",
+    level: "Fundamental II • Física de partículas (em inglês)",
+    icon: "⚛️",
+    file: "games/particle-clicker/index.html"
+  },
+  {
+    id: "astray",
+    title: "Astray",
+    subject: "Geral",
+    level: "Fundamental I e II • Labirinto 3D",
+    icon: "🌀",
+    file: "games/astray/index.html"
+  },
+  {
+    id: "hextris",
+    title: "Hextris",
+    subject: "Geral",
+    level: "Fundamental I e II • Raciocínio lógico",
+    icon: "🔷",
+    file: "games/hextris/index.html"
+  },
+  {
+    id: "green-mahjong",
+    title: "Mahjong",
+    subject: "Geral",
+    level: "Fundamental I e II • Raciocínio lógico",
+    icon: "🀄",
+    file: "games/green-mahjong/index.html"
+  },
+  {
+    id: "sudoku",
+    title: "Sudoku",
+    subject: "Matemática",
+    level: "Fundamental I e II • Raciocínio lógico",
+    icon: "🔢",
+    file: "games/sudoku/index.html"
+  },
+  {
+    id: "nave-espacial",
+    title: "Nave Espacial",
+    subject: "Geral",
+    level: "Fundamental I e II • Ação",
+    icon: "🚀",
+    file: "games/nave-espacial/index.html"
+  },
+  {
+    id: "duckhunt",
+    title: "Caça aos Patos",
+    subject: "Geral",
+    level: "Fundamental I • Reflexo",
+    icon: "🦆",
+    file: "games/duckhunt/index.html"
+  },
+  {
+    id: "hexapipes",
+    title: "Hexapipes",
+    subject: "Geral",
+    level: "Fundamental I e II • Raciocínio lógico (em inglês)",
+    icon: "🔧",
+    file: "games/hexapipes/index.html"
   }
 ];

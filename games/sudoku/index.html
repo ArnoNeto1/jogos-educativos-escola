@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <!--
+    Jogo original "Sudoku JS", criado por Thomas Baruchel
+    (github.com/baruchel/sudoku-js). Codigo sob licenca MIT (ver
+    arquivo LICENSE nesta pasta). Icones Ionicons (pasta ionic/) tambem
+    sob licenca MIT. Traduzido para pt-BR.
+    Repositorio original: https://github.com/baruchel/sudoku-js
+  -->
+  <head>
+  <title>Sudoku</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+
+  <link rel="stylesheet" href="jquery.mobile-1.4.5.min.css" />
+  <script type="text/javascript" src="jquery-1.11.1.min.js"></script>
+  <script type="text/javascript" src="jquery.mobile-1.4.5.min.js"></script>
+
+  <script type="text/javascript" src="sudoku.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="ionic/ionicons.min.css">
+  <style>
+    .voltar-overlay {
+      position: fixed; top: 10px; left: 10px; z-index: 10000;
+      text-decoration: none; font-weight: 700; color: #2563eb;
+      background: white; padding: 8px 16px; border-radius: 999px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+    }
+  </style>
+
+  </head>
+
+  <body onload="init();" onclick="elsewhere();">
+    <!-- Start of the page -->
+    <a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+    <div data-role="page" id="home">
+
+      <div role="main" class="ui-content">
+
+        <h1>Sudoku</h1>
+
+        <div class="table">
+        <table id="grid"></table>
+        </div>
+
+        <div class="table panel">
+        <table id="digits">
+            <tr>
+                <td id="digit-0" class="digit"></td>
+                <td id="digit-1" class="digit">1</td>
+                <td id="digit-2" class="digit">2</td>
+                <td id="digit-3" class="digit">3</td>
+                <td id="digit-4" class="digit">4</td>
+            <tr>
+                <td id="digit-5" class="digit">5</td>
+                <td id="digit-6" class="digit">6</td>
+                <td id="digit-7" class="digit">7</td>
+                <td id="digit-8" class="digit">8</td>
+                <td id="digit-9" class="digit">9</td>
+            </tr>
+
+        </table>
+        </div>
+
+        <div class="panel">
+            <ul id="buttons1">
+                <li id="but1" class="ion-fork-repo" data-pack="default" onclick="hypothesis1();"></li>
+                <li id="but2" class="ion-pull-request" data-pack="default" onclick="hypothesis2();"></li>
+                <li id="but3" class="ion-android-close" data-pack="android" onclick="hypothesis3();"></li>
+            </ul>
+        </div>
+        <div>
+            <ul id="buttons2">
+                <li class="ion-android-refresh" data-pack="android" onclick='$( "#restart" ).popup( "open" );'></li>
+                <li class="ion-code-working" data-pack="default" onclick='$( "#newGrid" ).popup( "open" );'></li>
+                <li class="ion-map" data-pack="default" onclick='$( "#help" ).popup( "open" );'></li>
+            </ul>
+        </div>
+
+      </div>
+
+      <div data-role="popup" id ="waiting" class="ui-content"
+          data-theme="b" data-overlay-theme="b">
+        <p>gerando um novo tabuleiro…</p>
+      </div>
+
+      <div data-role="popup" id ="newGrid" class="ui-content"
+          data-theme="b" data-overlay-theme="b">
+          <h2>Escolha o nível:</h2>
+          <ul>
+              <li onclick="newRandomGrid(72);">Fácil</li>
+              <li onclick="newRandomGrid(96);">Médio</li>
+              <li onclick="newRandomGrid(128);">Difícil</li>
+              <li onclick="newRandomGrid(192);">Insano</li>
+          </ul>
+      </div>
+
+      <div data-role="popup" id ="restart" class="ui-content"
+          data-theme="b" data-overlay-theme="b">
+          <h2>Reiniciar o jogo?</h2>
+          <ul>
+              <li onclick='restart();$( "#restart" ).popup( "close" );'>sim</li>
+              <li id="cancel" onclick='$( "#restart" ).popup( "close" );'>cancelar</li>
+          </ul>
+      </div>
+
+      <div data-role="popup" id ="help" class="ui-content"
+          data-theme="b" data-overlay-theme="b">
+          <h2>Ajuda</h2>
+          <p>Símbolos principais</p>
+          <ul>
+                <li class="ion-fork-repo" data-pack="default"></li>
+                <li class="help">fazer uma hipótese</li>
+                <li class="ion-pull-request" data-pack="default"></li>
+                <li class="help">confirmar hipótese</li>
+                <li class="ion-android-close" data-pack="android"></li>
+                <li class="help">descartar hipótese</li>
+                <li class="ion-android-refresh" data-pack="android"></li>
+                <li class="help">reiniciar o mesmo tabuleiro</li>
+                <li class="ion-code-working" data-pack="default"></li>
+                <li class="help">gerar um novo tabuleiro</li>
+          </ul>
+          <p>Ferramentas adicionais</p>
+          <h3 id="check" class="helpButton" onclick='check();$( "#help" ).popup( "close" );'>Mostrar respostas erradas</h3>
+          <h3 id="solve" class="helpButton" onclick='solve();$( "#help" ).popup( "close" );'>Resolver tabuleiro atual</h3>
+      </div>
+
+    </div>
+    <!-- End of the page -->
+
+  </body>
+</html>
