@@ -480,5 +480,13 @@ window.GAMES = [
     level: "Fundamental I e II • Exploração 3D e caça ao tesouro",
     icon: "⚓",
     file: "games/mares-perdidos/index.html"
+  },
+  {
+    id: "guardiao-de-kala",
+    title: "Guardião de Kala",
+    subject: "Geral",
+    level: "Fundamental I e II • Plataforma e torre-defesa",
+    icon: "💎",
+    file: "games/guardiao-de-kala/index.html"
   }
 ];
