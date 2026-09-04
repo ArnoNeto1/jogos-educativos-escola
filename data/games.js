@@ -448,5 +448,13 @@ window.GAMES = [
     level: "Fundamental I e II • Reflexo",
     icon: "🦘",
     file: "games/infinite-runner/index.html"
+  },
+  {
+    id: "heal-em-all",
+    title: "Cure os Zumbis",
+    subject: "Geral",
+    level: "Fundamental II • Ação/Plataforma",
+    icon: "💉",
+    file: "games/heal-em-all/index.html"
   }
 ];

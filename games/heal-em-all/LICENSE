@@ -1,0 +1,51 @@
+Jogo original: "Heal'em All. There's a cure for zombies."
+Repositorio: https://github.com/krzysu/game-off-2013
+Autores: Krzysztof Urbas (@krzysu, programacao e historia) e
+         Pawel Madeja (@pawelmadeja, arte)
+Feito para o GitHub Game Off 2013 (game jam anual do GitHub).
+
+Este pacote combina componentes sob licencas diferentes:
+
+================================================================
+1) Codigo do jogo (scripts/main.js, exceto o motor Quintus - ver
+   item 3): GPLv3.
+
+   Copyright (c) 2013 Krzysztof Urbas (@krzysu) e Pawel Madeja
+   (@pawelmadeja).
+
+   Texto completo da licenca GPLv3: https://www.gnu.org/licenses/gpl-3.0.txt
+   (licenca de copyleft: qualquer redistribuicao, mesmo modificada,
+   deve permanecer sob GPLv3 e disponibilizar o codigo-fonte
+   correspondente - este proprio repositorio do site, publico no
+   GitHub, cumpre essa condicao).
+
+================================================================
+2) Arte (imagens em images/): Creative Commons Attribution 4.0
+   International (CC BY 4.0).
+   https://creativecommons.org/licenses/by/4.0/
+
+   Artista original: Pawel Madeja.
+
+================================================================
+3) Motor de jogo Quintus (incluido dentro de scripts/main.js):
+   licenca MIT. https://github.com/erikbryn/quintusjs
+
+================================================================
+4) Efeitos sonoros e musica (audio/): baixados de OpenGameArt
+   (opengameart.org) pelos autores originais do jogo. O README do
+   projeto original nao especifica o autor/licenca de cada arquivo
+   individualmente - reproduzimos aqui o mesmo nivel de atribuicao
+   que os proprios autores documentaram.
+
+================================================================
+Adaptacoes feitas para hospedar neste portal:
+- Removido o script do Google Analytics presente no HTML original.
+- Fontes "Jolly Lodger" e "Boogaloo" (Google Fonts, licenca SIL Open
+  Font License) copiadas localmente em fonts/, em vez de carregadas
+  de um CDN externo.
+- Adicionado link "Voltar" para o portal.
+- Interface do jogo traduzida para pt-BR (falas do personagem, HUD,
+  telas de instrucao/vitoria/derrota), editando diretamente as strings
+  de texto dentro do pacote compilado (scripts/main.js). Identificadores
+  internos do motor Quintus (nomes de classe/componente) foram
+  deixados intocados para nao quebrar o motor.

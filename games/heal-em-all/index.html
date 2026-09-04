@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <!--
+    Jogo original "Heal'em All. There's a cure for zombies.", criado
+    por Krzysztof Urbas (@krzysu, programacao/historia) e Pawel Madeja
+    (@pawelmadeja, arte), vencedor do GitHub Game Off 2013.
+    Repositorio: https://github.com/krzysu/game-off-2013
+    Codigo sob licenca GPLv3, arte (imagens) sob licenca
+    Creative Commons Attribution 4.0 (ver LICENSE nesta pasta para o
+    texto completo de ambas). Motor de jogo: Quintus (MIT). Efeitos
+    sonoros: OpenGameArt (ver LICENSE para detalhes).
+    Removido o Google Analytics presente no original. Fontes
+    (Jolly Lodger, Boogaloo) copiadas localmente do Google Fonts em
+    vez de carregadas de um CDN externo. Interface traduzida para
+    pt-BR diretamente no pacote compilado (falas, HUD, telas de
+    instrucao/vitoria/derrota) - a unica linha alterada de sentido foi
+    "I need to kill myself" (piada do time original sobre o zumbi
+    querer ser curado), trocada para "Preciso ser curado" por ser um
+    site para criancas.
+  -->
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Heal'em All</title>
+  <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,minimal-ui">
+
+  <meta content="Explore um cemiterio abandonado, cure o maximo de zumbis que conseguir e encontre o caminho para fora. Mas cuidado para nao virar um deles!" name="description">
+
+  <link rel="stylesheet" href="styles/main.css">
+
+  <style>
+    .voltar-overlay {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: #252524;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 99999;
+      border: 1px solid #ec655d;
+    }
+  </style>
+</head>
+<body>
+  <a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+
+  <div id="loading" class="screen">
+    <div class="screen-title">
+      <h1>Heal'em All</h1>
+      <h2>Existe uma cura pra zumbis</h2>
+    </div>
+    <div id="loading-container" class="screen-body">
+      <div class="screen-text">Carregando...</div>
+      <div id="loading-progress"></div>
+    </div>
+  </div>
+
+  <div id="wrong-orientation" class="screen">
+    <div class="screen-title">
+      <h1>Heal'em All</h1>
+      <h2>Existe uma cura pra zumbis</h2>
+    </div>
+    <div class="screen-body">
+      <div class="screen-text">Gire seu aparelho para jogar</div>
+    </div>
+  </div>
+
+  <canvas id="quintus"></canvas>
+
+  <script>
+    // O jogo original enviava eventos para o Google Analytics em varios
+    // pontos do codigo (ex.: ao completar uma fase). Removemos o script
+    // de rastreamento por privacidade, mas as chamadas a ga(...) ainda
+    // existem dentro do pacote compilado abaixo — este substituto vazio
+    // evita o erro "ga is not defined" sem enviar nenhum dado a lugar
+    // nenhum.
+    window.ga = function () {};
+
+    // O motor Quintus mede window.innerWidth/innerHeight uma unica vez,
+    // de forma sincrona, assim que o script principal roda, para
+    // dimensionar o canvas em modo "maximize". Em uma aba recem-criada
+    // essas medidas podem, por uma fracao de segundo, ainda estar
+    // zeradas antes do primeiro layout da pagina - o que deixaria o
+    // canvas permanentemente com largura 0. Por isso so carregamos o
+    // pacote principal do jogo depois de confirmar que a janela ja tem
+    // um tamanho valido.
+    (function aguardarTamanhoValido() {
+      if (window.innerWidth && window.innerHeight) {
+        var script = document.createElement('script');
+        script.src = 'scripts/main.js';
+        document.body.appendChild(script);
+      } else {
+        requestAnimationFrame(aguardarTamanhoValido);
+      }
+    })();
+  </script>
+
+</body>
+</html>
