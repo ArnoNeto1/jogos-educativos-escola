@@ -472,5 +472,13 @@ window.GAMES = [
     level: "Fundamental I e II • Plataforma 3D cooperativo",
     icon: "🌗",
     file: "games/sol-e-lua/index.html"
+  },
+  {
+    id: "mares-perdidos",
+    title: "Mares Perdidos",
+    subject: "Geral",
+    level: "Fundamental I e II • Exploração 3D e caça ao tesouro",
+    icon: "⚓",
+    file: "games/mares-perdidos/index.html"
   }
 ];
