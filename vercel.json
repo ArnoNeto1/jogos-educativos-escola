@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    { "source": "/jogos", "destination": "/jogos/", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/jogos/", "destination": "/" },
+    { "source": "/jogos/:path*", "destination": "/:path*" }
+  ]
+}
