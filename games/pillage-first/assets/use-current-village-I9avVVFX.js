@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{G as n,o as r,t as i}from"./api-context-CpEl3SA7.js";var a=e(t(),1),o=(0,a.createContext)({}),s=()=>{let{apiClient:e}=(0,a.use)(i),{villageSlug:t}=(0,a.use)(o),{data:s}=n({queryKey:[r,t],queryFn:async()=>{let{data:n}=await e.get(`/villages/:villageSlug`,{path:{villageSlug:t}});return n},staleTime:2e4});return{currentVillage:s}};export{o as n,s as t};
+//# sourceMappingURL=use-current-village-I9avVVFX.js.map

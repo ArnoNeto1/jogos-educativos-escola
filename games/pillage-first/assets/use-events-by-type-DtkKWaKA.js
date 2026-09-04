@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{G as n,l as r,t as i}from"./api-context-CpEl3SA7.js";import{t as a}from"./use-current-village-I9avVVFX.js";var o=e(t(),1),s=e=>{let{apiClient:t}=(0,o.use)(i),{currentVillage:s}=a(),{data:c}=n({queryKey:[r,e,s.id],queryFn:async()=>{let{data:n}=await t.get(`/villages/:villageId/events/:eventType`,{path:{villageId:s.id,eventType:e}});return n}});return{eventsByType:c,hasEvents:c.length>0}};export{s as t};
+//# sourceMappingURL=use-events-by-type-DtkKWaKA.js.map

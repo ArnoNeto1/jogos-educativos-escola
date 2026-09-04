@@ -1,0 +1,2 @@
+var e=e=>e.toString().replaceAll(/\B(?=(\d{3})+(?!\d))/g,`,`),t=e=>{let t=Math.abs(e),n=e<0?`-`:``;if(t>=1e6){let e=t/1e6,r=Math.trunc(e*10)/10,i=Math.trunc(r);return`${n}${i<100?r:i}M`}if(t>=1e3){let e=t/1e3,r=Math.trunc(e*10)/10,i=Math.trunc(r);return`${n}${i<100?r:i}K`}return`${e}`},n=(e,t=!0)=>{if(t){let t=(e-1)*100;return`${Math.round(t)}%`}let n=e*100;return`${Math.round(n)}%`},r=e=>Number.isInteger(e)?e.toLocaleString():`NaN`;export{t as i,e as n,n as r,r as t};
+//# sourceMappingURL=format-BwgFqLes.js.map

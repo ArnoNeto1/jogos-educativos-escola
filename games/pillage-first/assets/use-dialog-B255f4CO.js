@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";var n=e(t(),1),r=(e=!1)=>{let[t,r]=(0,n.useState)(e),i=(0,n.useRef)(null);return{isOpen:t,closeModal:(0,n.useCallback)(()=>{(0,n.startTransition)(()=>{r(!1)}),i.current=null},[]),openModal:(0,n.useCallback)(e=>{e&&(i.current=e),(0,n.startTransition)(()=>{r(!0)})},[]),toggleModal:(0,n.useCallback)(()=>{r(e=>!e)},[]),modalArgs:i}};export{r as t};
+//# sourceMappingURL=use-dialog-B255f4CO.js.map

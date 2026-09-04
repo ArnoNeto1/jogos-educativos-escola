@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{G as n,V as r,t as i}from"./api-context-CpEl3SA7.js";import{t as a}from"./use-me-DDIr1BLS.js";var o=e(t(),1),s=()=>{let{apiClient:e}=(0,o.use)(i),{player:t}=a(),{data:s}=n({queryKey:[r],queryFn:async()=>{let{data:n}=await e.get(`/players/:playerId/villages`,{path:{playerId:t.id}});return n}});return{playerVillages:s}};export{s as t};
+//# sourceMappingURL=use-player-village-listing-Crs0Y-9j.js.map

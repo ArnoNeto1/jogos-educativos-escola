@@ -1,0 +1,2 @@
+import{V as e}from"./esm-CezHRo_i.js";var t=(e,t)=>e instanceof Error?e:typeof e==`object`&&e&&`message`in e&&e.message?Error(String(e.message)):Error(t),n=(e={})=>Object.fromEntries(Object.entries(e).filter(([,e])=>e!==void 0).map(([e,t])=>[e,String(t)])),r=(r,i,a)=>{if(!e){console.error(r);return}e.unpatchedConsole.error(i,r,a),e.api.pushError(t(r,i),{context:{message:i,...n(a)}})};export{r as t};
+//# sourceMappingURL=report-error-C-NANkCu.js.map

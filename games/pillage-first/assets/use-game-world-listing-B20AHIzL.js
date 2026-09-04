@@ -1,0 +1,2 @@
+import{t as e}from"./useQuery-BogF6Ll3.js";import{t}from"./query-keys-D9nhoa1Q.js";import{t as n}from"./game-world-listing-CIUbF0mq.js";var r=()=>{let{data:r}=e({queryKey:[t],queryFn:n,initialData:[]});return{gameWorldListing:r}};export{r as t};
+//# sourceMappingURL=use-game-world-listing-B20AHIzL.js.map

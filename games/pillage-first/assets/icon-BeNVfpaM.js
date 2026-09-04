@@ -1,0 +1,2 @@
+import{t as e}from"./jsx-runtime-NZYk81nU.js";var t=e(),n=({iconId:e,...n})=>{let r=`/games/pillage-first/react-icons-sprite-9eb3a001.svg#${e}`;return(0,t.jsx)(`svg`,{height:`1em`,width:`1em`,preserveAspectRatio:`xMidYMid meet`,viewBox:`0 0 24 24`,...n,children:(0,t.jsx)(`use`,{href:r})})};export{n as t};
+//# sourceMappingURL=icon-BeNVfpaM.js.map

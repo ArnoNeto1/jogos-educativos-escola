@@ -1,0 +1,2 @@
+import{n as e,t}from"./random-DLlYy1DZ.js";var n=1.114,r=e=>{let t=((Math.min(20,Math.max(1,Math.trunc(e)))-1)/19)**n;return Math.round(14*(508/14)**t)},i=(n,r,i,a)=>{let o=e(`${n}${i}${a}`);return t(o,48,72)*6e4/r},a=e=>{let t=e*4,n=Math.floor(t/4),r=t%4;return Array.from({length:4},(e,t)=>n+ +(t<r))};export{a as n,r,i as t};
+//# sourceMappingURL=gatherers-hut-C2w_OOuz.js.map

@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{G as n,T as r,t as i}from"./api-context-CpEl3SA7.js";var a=e(t(),1),o=e=>{let{apiClient:t}=(0,a.use)(i),{data:o}=n({queryKey:[r,e],queryFn:async()=>{let{data:n}=await t.get(`/players/:playerId/villages-with-population`,{path:{playerId:e}});return n}});return{playerVillages:o}};export{o as t};
+//# sourceMappingURL=use-player-villages-BZWy-Wjx.js.map

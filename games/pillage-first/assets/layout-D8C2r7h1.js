@@ -1,0 +1,1 @@
+import{t as e}from"./layout-CQHypsnO.js";export{e as clientMiddleware};

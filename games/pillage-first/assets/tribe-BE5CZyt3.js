@@ -1,0 +1,2 @@
+import{n as e}from"./schemas-DtU7FX6f.js";var t=[`gauls`,`romans`,`teutons`,`egyptians`,`huns`],n=[`spartans`],r=[`nature`,`natars`],i=[...t,...n,...r];e(t),e(n),e(r);var a=e(i).meta({id:`Tribe`});export{a as t};
+//# sourceMappingURL=tribe-BE5CZyt3.js.map

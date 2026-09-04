@@ -1,0 +1,2 @@
+var e=async(e,t,n=[])=>new Promise((r,i)=>{let a=new Worker(e,{type:`module`});t!==void 0&&a.postMessage(t,n);let o=e=>{a.removeEventListener(`message`,o),a.removeEventListener(`error`,s),a.terminate(),r(e.data)},s=e=>{a.removeEventListener(`message`,o),a.removeEventListener(`error`,s),a.terminate(),i(e)};a.addEventListener(`message`,o),a.addEventListener(`error`,s)});export{e as t};
+//# sourceMappingURL=workers-D6WMis5_.js.map

@@ -1,0 +1,2 @@
+import{t as e}from"./jsx-runtime-NZYk81nU.js";import{t}from"./clsx-DB0hHKMi.js";import{r as n}from"./button-CBKi223r.js";var r=n(`animate-pulse rounded-md bg-gray-300 dark:bg-gray-700`,{variants:{variant:{default:``,dark:`bg-gray-700`}},defaultVariants:{variant:`default`}}),i=e(),a=({className:e,variant:n,...a})=>(0,i.jsx)(`div`,{"data-slot":`skeleton`,className:t(r({variant:n}),e),...a});export{a as t};
+//# sourceMappingURL=skeleton-CuZLw3TW.js.map

@@ -304,5 +304,13 @@ window.GAMES = [
     level: "Fundamental II • Simulação de cidade (em inglês)",
     icon: "🏗️",
     file: "games/micropolis/index.html"
+  },
+  {
+    id: "pillage-first",
+    title: "Pillage First!",
+    subject: "Geral",
+    level: "Fundamental II • Estratégia single-player (em inglês)",
+    icon: "🏰",
+    file: "games/pillage-first/index.html"
   }
 ];

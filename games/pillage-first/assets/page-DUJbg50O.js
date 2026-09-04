@@ -1,0 +1,1 @@
+import{t as e}from"./page-B_ipn0Aa.js";export{e as clientMiddleware};

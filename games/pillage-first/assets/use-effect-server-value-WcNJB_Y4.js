@@ -1,0 +1,2 @@
+import{t as e}from"./use-effects-8WzraCHK.js";var t=new Set([`woodProduction`,`clayProduction`,`ironProduction`,`wheatProduction`]),n=n=>{let{effects:r}=e(),i=r.find(({id:e,scope:t})=>e===n&&t===`server`);return{hasEffect:!!i&&t.has(n),serverEffectValue:i?.value??1}};export{n as t};
+//# sourceMappingURL=use-effect-server-value-WcNJB_Y4.js.map

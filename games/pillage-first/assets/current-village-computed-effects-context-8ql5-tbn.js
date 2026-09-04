@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";var n=(0,e(t(),1).createContext)({});export{n as t};
+//# sourceMappingURL=current-village-computed-effects-context-8ql5-tbn.js.map

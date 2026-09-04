@@ -1,0 +1,2 @@
+var e=[250,150,350,100],t=6e5,n=18e5,r=new Map([[1,[`RAT`,`SPIDER`,`SERPENT`]],[2,[`RAT`,`SPIDER`,`SERPENT`,`BAT`,`WILD_BOAR`]],[3,[`RAT`,`SPIDER`,`SERPENT`,`BAT`,`WILD_BOAR`,`WOLF`]],[4,[`RAT`,`SPIDER`,`SERPENT`,`BAT`,`WILD_BOAR`,`WOLF`,`BEAR`]],[5,[`RAT`,`SPIDER`,`SERPENT`,`BAT`,`WILD_BOAR`,`WOLF`,`BEAR`,`CROCODILE`,`TIGER`,`ELEPHANT`]]]),i=e=>r.get(Math.min(5,Math.max(1,e))),a=e=>[0,0,0,e*100],o=(e,t)=>e*n/t;export{i as a,o as i,e as n,a as r,t};
+//# sourceMappingURL=hunters-lodge-_DbmCRUM.js.map

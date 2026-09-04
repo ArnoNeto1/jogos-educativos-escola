@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";var n=e(t(),1),r={},i=n.createContext(r);function a(e){let t=n.useContext(i);return n.useMemo(function(){return typeof e==`function`?e(t):{...t,...e}},[t,e])}function o(e){let t;return t=e.disableParentContext?typeof e.components==`function`?e.components(r):e.components||r:a(e.components),n.createElement(i.Provider,{value:t},e.children)}export{a as n,o as t};
+//# sourceMappingURL=lib-Dm3bhtL9.js.map

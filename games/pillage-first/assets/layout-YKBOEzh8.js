@@ -1,0 +1,1 @@
+import{t as e}from"./layout-_7EJta-V.js";export{e as clientMiddleware};

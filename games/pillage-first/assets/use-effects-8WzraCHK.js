@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{G as n,c as r,t as i}from"./api-context-CpEl3SA7.js";import{t as a}from"./use-current-village-I9avVVFX.js";var o=e(t(),1),s=()=>{let{apiClient:e}=(0,o.use)(i),{currentVillage:t}=a(),{data:s}=n({queryKey:[r,t.tileId],queryFn:async()=>{let{data:n}=await e.get(`/tiles/:tileId/effects`,{path:{tileId:t.tileId}});return n}});return{effects:s}};export{s as t};
+//# sourceMappingURL=use-effects-8WzraCHK.js.map

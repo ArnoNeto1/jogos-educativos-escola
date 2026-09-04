@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{G as n,P as r,t as i}from"./api-context-CpEl3SA7.js";var a=e(t(),1),o=()=>{let{apiClient:e}=(0,a.use)(i),{data:t}=n({queryKey:[r],queryFn:async()=>{let{data:t}=await e.get(`/server`);return t},staleTime:1/0,gcTime:1/0}),{id:o,slug:s}=t,{mapSize:c,speed:l}=t.configuration;return{server:t,serverId:o,serverSlug:s,mapSize:c,serverSpeed:l}};export{o as t};
+//# sourceMappingURL=use-server-Cp8fXNWD.js.map

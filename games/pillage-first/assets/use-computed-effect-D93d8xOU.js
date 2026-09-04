@@ -1,0 +1,2 @@
+import{t as e}from"./useQuery-BogF6Ll3.js";import{t}from"./use-current-village-I9avVVFX.js";import{t as n}from"./calculate-computed-effect-C6hcfQ2s.js";import{t as r}from"./use-effects-8WzraCHK.js";var i=`computed-effect`;function a(a){let{effects:o}=r(),{currentVillage:s}=t(),c=()=>n(a,o,s.tileId),{data:l}=e({queryKey:[i,a,s.tileId,o],queryFn:c,initialData:c,staleTime:1/0});return l}export{a as t};
+//# sourceMappingURL=use-computed-effect-D93d8xOU.js.map

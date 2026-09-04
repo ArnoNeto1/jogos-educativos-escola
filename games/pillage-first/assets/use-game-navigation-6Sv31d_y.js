@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{c as n}from"./components-CNg-QliY.js";import{t as r}from"./use-server-Cp8fXNWD.js";import{t as i}from"./use-current-village-I9avVVFX.js";var a=e(t(),1),o=()=>{let{currentVillage:e}=i(),{pathname:t,search:o}=n(),{serverSlug:s}=r(),c=(0,a.useCallback)(e=>`/game/${s}/${e}`,[s]);return{getNewVillageUrl:(0,a.useCallback)(n=>`${t.replace(e.slug,n)}${o}`,[t,o,e]),getVillageBasePath:c}};export{o as t};
+//# sourceMappingURL=use-game-navigation-6Sv31d_y.js.map

@@ -1,0 +1,2 @@
+import{E as e}from"./utils-ju-9qnYh.js";import{n as t,t as n}from"./middleware-BWmL6sCF.js";var r=[async({context:r,params:i})=>{let{serverSlug:a}=i;if(!await n(a))throw e(`/game/${a}/not-found`);if(await t(r,a))throw e(`/game/${a}/not-allowed`)}];export{r as t};
+//# sourceMappingURL=layout-_7EJta-V.js.map

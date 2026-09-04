@@ -1,0 +1,2 @@
+import{i as e,t}from"./i18next-CpCP5OnR.js";import{i as n,n as r}from"./i18nInstance-CZ6SuJbU.js";var i={type:`3rdParty`,init(e){n(e.options.react),r(e)}},a=[`en-US`],o=t;await e(i).init({lng:`en-US`,debug:!1,fallbackLng:`en-US`,load:`currentOnly`,defaultNS:`app`,supportedLngs:a,interpolation:{escapeValue:!1}});export{o as t};
+//# sourceMappingURL=i18n-DWk8zcSO.js.map

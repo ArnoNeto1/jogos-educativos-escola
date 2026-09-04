@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";import{E as n,G as r,t as i}from"./api-context-CpEl3SA7.js";var a=e(t(),1),o=()=>{let{apiClient:e}=(0,a.use)(i),{data:t}=r({queryKey:[n],queryFn:async()=>{let{data:t}=await e.get(`/players/me`);return t},staleTime:1/0,gcTime:1/0});return{player:t}};export{o as t};
+//# sourceMappingURL=use-me-DDIr1BLS.js.map

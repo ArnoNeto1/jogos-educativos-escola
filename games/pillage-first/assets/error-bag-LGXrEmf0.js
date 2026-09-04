@@ -1,0 +1,2 @@
+import{t as e}from"./jsx-runtime-NZYk81nU.js";var t=e(),n=({errorBag:e})=>e.length===0?null:(0,t.jsx)(`ul`,{className:`flex flex-col ml-4 gap-1 list-disc`,children:e.map(e=>(0,t.jsx)(`li`,{className:`text-red-500 text-sm font-medium`,children:e},e))});export{n as t};
+//# sourceMappingURL=error-bag-LGXrEmf0.js.map

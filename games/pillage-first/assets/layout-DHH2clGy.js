@@ -1,0 +1,1 @@
+import{t as e}from"./layout-6i0U_uQQ.js";export{e as clientLoader};

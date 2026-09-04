@@ -1,0 +1,2 @@
+import{t as e}from"./jsx-runtime-NZYk81nU.js";import{t}from"./clsx-DB0hHKMi.js";import{r as n}from"./time-CKCLhHhY.js";import{t as r}from"./use-countdown-DfPVxZWH.js";var i=e(),a=({endsAt:e,...a})=>{let{className:o}=a,s=r(),c=Math.max(0,e-s),l=n(c);return(0,i.jsx)(`span`,{className:t(`tabular-nums transition-colors`,o),...a,children:l})};export{a as t};
+//# sourceMappingURL=countdown-T1j9w21n.js.map

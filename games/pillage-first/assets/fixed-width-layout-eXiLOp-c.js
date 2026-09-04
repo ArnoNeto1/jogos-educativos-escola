@@ -1,0 +1,2 @@
+import{a as e,t}from"./components-CNg-QliY.js";import{t as n}from"./jsx-runtime-NZYk81nU.js";var r=n(),i=e(()=>(0,r.jsx)(`main`,{className:`lg:mt-20 mx-auto max-w-2xl mb-safe-offset-40 lg:mb-0`,children:(0,r.jsx)(`div`,{className:`flex flex-col gap-4 p-2 bg-card lg:border lg:border-border relative transition-colors`,children:(0,r.jsx)(t,{})})}));export{i as default};
+//# sourceMappingURL=fixed-width-layout-eXiLOp-c.js.map

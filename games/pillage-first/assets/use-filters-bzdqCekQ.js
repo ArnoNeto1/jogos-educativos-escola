@@ -1,0 +1,2 @@
+import{i as e}from"./lib-Cvv9oSee.js";var t=({paramName:t,defaultFilters:n=[]})=>{let[r,i]=e(),a=r.getAll(t),o=a.length>0?a:n,s=e=>{i(n=>{let r=new URLSearchParams(n);r.delete(t);for(let n of e)r.append(t,n);return r.set(`page`,`1`),r})},c=Number.parseInt(r.get(`page`)??`1`,10);return{filters:o,onFiltersChange:s,page:c,handlePageChange:e=>{i(t=>{let n=new URLSearchParams(t),r=typeof e==`function`?e(c):e;return n.set(`page`,r.toString()),n})}}};export{t};
+//# sourceMappingURL=use-filters-bzdqCekQ.js.map

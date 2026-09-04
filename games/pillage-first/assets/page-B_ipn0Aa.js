@@ -1,0 +1,2 @@
+import{E as e}from"./utils-ju-9qnYh.js";import{n as t}from"./middleware-BWmL6sCF.js";var n=[async({context:n,params:r})=>{let{serverSlug:i}=r;if(!await t(n,i))throw e(`/game/${i}/v-1/resources`)}];export{n as t};
+//# sourceMappingURL=page-B_ipn0Aa.js.map

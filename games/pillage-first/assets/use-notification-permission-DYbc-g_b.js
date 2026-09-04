@@ -1,0 +1,2 @@
+import{r as e}from"./rolldown-runtime-hePW80VL.js";import{t}from"./react-CwJFpaho.js";var n=e(t(),1),r=typeof window>`u`||!(`Notification`in window)||typeof Notification.requestPermission!=`function`?`not-available`:window.Notification.permission,i=new Set,a=e=>(i.add(e),()=>i.delete(e)),o=()=>r,s=async()=>{let e=await window.Notification.requestPermission();if(e!==r){r=e;for(let e of i)e()}return e},c=()=>(0,n.useSyncExternalStore)(a,o);export{c as n,s as t};
+//# sourceMappingURL=use-notification-permission-DYbc-g_b.js.map
