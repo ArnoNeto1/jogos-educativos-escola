@@ -456,5 +456,13 @@ window.GAMES = [
     level: "Fundamental II • Ação/Plataforma",
     icon: "💉",
     file: "games/heal-em-all/index.html"
+  },
+  {
+    id: "flight-of-harmony",
+    title: "Meu Aviãozinho",
+    subject: "Geral",
+    level: "Fundamental I e II • Voo/Estratégia",
+    icon: "✈️",
+    file: "games/flight-of-harmony/index.html"
   }
 ];
