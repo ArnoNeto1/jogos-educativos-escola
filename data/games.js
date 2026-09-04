@@ -288,5 +288,21 @@ window.GAMES = [
     level: "Fundamental I e II • Gestão/Construção",
     icon: "🏡",
     file: "https://vila-feliz.lovable.app"
+  },
+  {
+    id: "isocity",
+    title: "Minha Cidade",
+    subject: "Geral",
+    level: "Fundamental I • Construção livre",
+    icon: "🏙️",
+    file: "games/isocity/index.html"
+  },
+  {
+    id: "micropolis",
+    title: "Micropolis",
+    subject: "Geral",
+    level: "Fundamental II • Simulação de cidade (em inglês)",
+    icon: "🏗️",
+    file: "games/micropolis/index.html"
   }
 ];

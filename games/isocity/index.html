@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<!--
+	  Jogo original "IsoCity", criado por Victor Ribeiro
+	  (github.com/victorqribeiro/isocity). Código sob licença MIT (ver
+	  arquivo LICENSE nesta pasta) - usado aqui com autorização da licença,
+	  sem modificações no jogo em si. Texturas por Kenney (kenney.nl),
+	  licença CC0 (domínio público).
+	  Repositório original: https://github.com/victorqribeiro/isocity
+	-->
+	<meta charset="utf-8">
+	<meta name="theme-color" content="#fff">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta property="og:type" content="Article">
+	<meta property="og:title" content="Minha Cidade">
+	<meta property="og:description" content="Construtor de cidade isométrico livre, sem objetivos - só criatividade."/>
+	<meta name="Description" content="Construtor de cidade isométrico livre, sem objetivos - só criatividade.">
+	<link rel="icon" href="favicon.png" sizes="256x256">
+	<link rel="apple-touch-icon" href="favicon.png">
+	<title>Minha Cidade</title>
+	<link rel="stylesheet" href="css/main.css">
+	<style>
+	  .voltar-overlay {
+	    position: fixed; top: 10px; left: 10px; z-index: 1000;
+	    text-decoration: none; font-weight: 700; color: #2563eb;
+	    background: white; padding: 8px 16px; border-radius: 999px;
+	    box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+	  }
+	  .dica-overlay {
+	    position: fixed; bottom: 10px; left: 10px; z-index: 1000;
+	    background: rgba(255,255,255,0.9); padding: 8px 14px; border-radius: 12px;
+	    box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 13px;
+	    color: #333; max-width: 260px;
+	  }
+	</style>
+</head>
+<body>
+
+<a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+<div class="dica-overlay">🖱️ Escolha uma peça na lateral e clique no terreno para construir. Clique com o botão direito para apagar.</div>
+<section id="main">
+	<div id="tools"></div>
+	<div id="area">
+		<canvas id="bg"></canvas>
+		<canvas id="fg"></canvas>
+	</div>
+</section>
+<script src="js/main.js"></script>
+
+</body>
+</html>
