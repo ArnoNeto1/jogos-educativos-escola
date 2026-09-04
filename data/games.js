@@ -280,5 +280,13 @@ window.GAMES = [
     level: "Fundamental I e II • Reflexo",
     icon: "⚡",
     file: "https://duelo-relampago.lovable.app"
+  },
+  {
+    id: "vila-feliz",
+    title: "Vila Feliz",
+    subject: "Geral",
+    level: "Fundamental I e II • Gestão/Construção",
+    icon: "🏡",
+    file: "https://vila-feliz.lovable.app"
   }
 ];
