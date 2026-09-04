@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!--
+    Jogo original "Daily Pen #010: A generic Infinite Runner game",
+    criado por Eduardo Lopes (codepen.io/EduardoLopes/pen/vYWpLQ).
+    Licenca MIT (ver LICENSE nesta pasta - copia arquivada via Wayback
+    Machine da pagina de licenca do autor, ja que o link original
+    aponta hoje de volta para o proprio pen). Usa a biblioteca sketch.js
+    (MIT, Justin Windle - github.com/soulwire/sketch.js), copiada
+    localmente em sketch.min.js. Traduzido para pt-BR.
+  -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pulo Sem Fim</title>
+  <style>
+    body {
+      background: #e3e3e3;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      font-family: system-ui, sans-serif;
+    }
+    #container {
+      margin-top: 6%;
+      display: inline-block;
+    }
+    canvas {
+      background: #cecece;
+      border: 1px solid #181818;
+    }
+    .controlls {
+      color: #333;
+    }
+    .voltar-overlay {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      background: #181818;
+      color: #fff;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+
+  <div id="container"></div>
+
+  <div class="controlls">
+    <p>Pular: <b>CLIQUE</b>, <b>ESPAÇO</b>, <b>SETA PARA CIMA</b> ou <b>W</b> (segure para pular mais alto)</p>
+    <p>(<b>TOQUE</b> também funciona, mas o jogo não é responsivo).</p>
+  </div>
+
+  <script src="sketch.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

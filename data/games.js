@@ -440,5 +440,13 @@ window.GAMES = [
     level: "Fundamental I e II • Raciocínio lógico (em inglês)",
     icon: "🔧",
     file: "games/hexapipes/"
+  },
+  {
+    id: "infinite-runner",
+    title: "Pulo Sem Fim",
+    subject: "Geral",
+    level: "Fundamental I e II • Reflexo",
+    icon: "🦘",
+    file: "games/infinite-runner/index.html"
   }
 ];
