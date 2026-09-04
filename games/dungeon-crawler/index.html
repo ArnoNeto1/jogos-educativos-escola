@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!--
+      Jogo original "Dungeon Crawler on Demand!", criado por redpangilinan
+      (github.com/redpangilinan/dungeon-crawler-rpg-od). Codigo sob
+      licenca GPLv3 (ver arquivo LICENSE nesta pasta). Repositorio
+      arquivado pelo autor original (sem mais atualizacoes).
+
+      Creditos de assets de terceiros (conforme README original):
+      - Sprites de monstros: Aekashics (aekashics.itch.io)
+      - Efeitos sonoros de RPG: Leohpaz (leohpaz.itch.io)
+      - Musica da masmorra ("dungeon.mp3"): Sara Garrard / Sonatina
+        (sonatina.itch.io/letsadventure) - uso permitido em jogos com
+        credito.
+
+      Trocamos 2 trilhas e 1 efeito sonoro cuja licenca original nao
+      pode ser verificada (musicas de batalha de "Leviathan_Music" via
+      SoundCloud, e efeito de "level up" de phoenix1291) por alternativas
+      com licenca clara:
+      - "battle_boss.mp3": Cleyton Kauffman, CC0 (opengameart.org/content/boss-battle-theme)
+      - "battle_guardian.mp3": Alexandr Zhelanov, CC-BY 3.0 (opengameart.org/content/battle-music)
+      - "battle_main.mp3": MintoDog, CC0 (opengameart.org/comment/112348)
+      - "level_up.wav": bart, CC-BY 3.0 (opengameart.org/content/level-up-sound-effects)
+
+      Removido o script do Google Analytics do autor original (o site
+      da escola nao coleta dados de navegacao dos alunos). Interface
+      ainda em ingles nesta etapa (traducao pt-BR planejada para depois).
+      Repositorio original: https://github.com/redpangilinan/dungeon-crawler-rpg-od
+    -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://fonts.googleapis.com/css?family=Rubik Vinyl' rel='stylesheet'>
+    <link rel="stylesheet" href="./assets/css/all.min.css">
+    <link rel="stylesheet" href="./assets/css/rpg-awesome.min.css">
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="icon" type="image/png" href="./assets/icon/favicon.ico">
+    <script src="./assets/js/howler.min.js"></script>
+    <title>Dungeon Crawler on Demand!</title>
+    <style>
+      .voltar-overlay {
+        position: fixed; top: 10px; left: 10px; z-index: 10000;
+        text-decoration: none; font-weight: 700; color: #2563eb;
+        background: white; padding: 8px 16px; border-radius: 999px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+      }
+    </style>
+</head>
+
+<body>
+    <a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+    <main>
+        <!-- ===== Rooms ===== -->
+        <!-- Title Screen -->
+        <section id="title-screen" class="game-container">
+            <div>
+                <i class="fa-solid fa-dungeon fa-5x"></i>
+                <h1>Dungeon Crawler on Demand!</h1>
+            </div>
+            <p>Tap to explore the dungeon</p>
+        </section>
+
+        <!-- Character Creation -->
+        <section id="character-creation" class="game-container">
+            <form id="name-submit">
+                <h1>What is your name?</h1>
+                <input type="text" id="name-input" autocomplete="off">
+                <p id="alert"></p>
+                <button type="submit">Confirm</button>
+            </form>
+        </section>
+
+        <!-- Hub -->
+        <section id="dungeon-main" class="game-container scrollable">
+            <header>
+                <p id="player-name"></p>
+                <p id="player-exp"></p>
+                <p id="player-gold"></p>
+                <button onclick="openInventory()"><i class="fas fa-bars" style="font-size: 1.3rem;"></i></button>
+            </header>
+            <div class="stat-panel">
+                <div class="box">
+                    <h4>Stats</h4>
+                    <p><i class="fas fa-heart"></i>HP: <span id="player-hp"></span></p>
+                    <p><i class="ra ra-sword"></i>ATK: <span id="player-atk"></span></p>
+                    <p><i class="ra ra-round-shield"></i>DEF: <span id="player-def"></span></p>
+                    <p><i class="ra ra-plain-dagger"></i>ATK.SPD: <span id="player-atkspd"></span></p>
+                    <p><i class="ra ra-dripping-blade"></i>VAMP: <span id="player-vamp"></span></p>
+                    <p><i class="ra ra-lightning-bolt"></i>C.RATE: <span id="player-crate"></span></p>
+                    <p><i class="ra ra-focused-lightning"></i>C.DMG: <span id="player-cdmg"></span></p>
+                </div>
+                <div class="box" id="bonus-stats"></div>
+            </div>
+            <div class="dungeon-head">
+                <p id="dungeonTime"></p>
+                <p id="floorCount"></p>
+                <p id="roomCount"></p>
+                <button id="dungeonActivity"></button>
+            </div>
+            <div class="logBox primary-panel">
+                <p id="dungeonAction"></p>
+                <div id="dungeonLog"></div>
+            </div>
+        </section>
+
+        <!-- ===== Utility ===== -->
+        <div id="loading" class="game-container">
+            <div class="loader"></div>
+        </div>
+
+        <!-- ===== Modals ===== -->
+        <div class="modal-container" id="inventory">
+            <div class="content">
+                <div class="content-head">
+                    <h3>Inventory</h3>
+                    <p onclick="closeInventory()"><i class="fa fa-xmark"></i></p>
+                </div>
+                <div class="content-head">
+                    <button id="sell-all">Sell</button>
+                    <select id="sell-rarity">
+                        <option class="Common" value="Common">Common</option>
+                        <option class="Uncommon" value="Uncommon">Uncommon</option>
+                        <option class="Rare" value="Rare">Rare</option>
+                        <option class="Epic" value="Epic">Epic</option>
+                        <option class="Legendary" value="Legendary">Legendary</option>
+                        <option class="Heirloom" value="Heirloom">Heirloom</option>
+                        <option class="Common" value="All">All</option>
+                    </select>
+                </div>
+                <div class="inventorySlots" id="playerInventory"></div>
+                <div class="stat-panel">
+                    <div class="box">
+                        <div class="box-head">
+                            <h4>Equipment</h4>
+                            <p id="unequip-all"><i class="fa fa-circle-xmark"></i></p>
+                        </div>
+                        <div id="playerEquipment"></div>
+                    </div>
+                </div>
+                <button id="menu-btn">Menu</button>
+            </div>
+        </div>
+        <div class="modal-container" id="equipmentInfo"></div>
+        <div class="modal-container" id="combatPanel"></div>
+        <div class="modal-container" id="lvlupPanel">
+            <div class="content" id="lvlupSelect"></div>
+        </div>
+        <div class="modal-container" id="defaultModal"></div>
+        <div class="modal-container" id="menuModal"></div>
+        <div class="modal-container" id="confirmationModal"></div>
+    </main>
+
+    <script src="./assets/js/utility.js"></script>
+    <script src="./assets/js/elements.js"></script>
+    <script src="./assets/js/music.js"></script>
+    <script src="./assets/js/player.js"></script>
+    <script src="./assets/js/equipment.js"></script>
+    <script src="./assets/js/combat.js"></script>
+    <script src="./assets/js/dungeon.js"></script>
+    <script src="./assets/js/enemy.js"></script>
+    <script src="./assets/js/main.js"></script>
+</body>
+
+</html>

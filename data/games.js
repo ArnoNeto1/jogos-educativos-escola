@@ -344,5 +344,37 @@ window.GAMES = [
     level: "Fundamental II • Estratégia",
     icon: "🗼",
     file: "games/tower-defense/index.html"
+  },
+  {
+    id: "bounceback",
+    title: "Bounce Back",
+    subject: "Geral",
+    level: "Fundamental II • Ação/Roguelike",
+    icon: "🪃",
+    file: "games/bounceback/index.html"
+  },
+  {
+    id: "spacehuggers",
+    title: "Space Huggers",
+    subject: "Geral",
+    level: "Fundamental II • Ação/Plataforma",
+    icon: "👾",
+    file: "games/spacehuggers/index.html"
+  },
+  {
+    id: "dungeon-crawler",
+    title: "Dungeon Crawler",
+    subject: "Geral",
+    level: "Fundamental II • RPG (em inglês)",
+    icon: "🗡️",
+    file: "games/dungeon-crawler/index.html"
+  },
+  {
+    id: "huejumper",
+    title: "Hue Jumper",
+    subject: "Geral",
+    level: "Fundamental I e II • Corrida",
+    icon: "🏎️",
+    file: "games/huejumper/index.html"
   }
 ];

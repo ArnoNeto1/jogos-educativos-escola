@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+    Jogo original "Bounce Back", criado por Frank Force para a
+    competicao JS13k 2019 (github.com/KilledByAPixel/BounceBack).
+    Codigo e o tileset "tiles.png" sob licenca GPLv2 (ver arquivo
+    LICENSE nesta pasta). Musica e efeitos sonoros sao gerados
+    proceduralmente (ZzFX), sem dependencia de assets de terceiros.
+    Traduzido para pt-BR.
+
+    Roguelike de acao vista de cima, estilo Zelda, com bumerangue como
+    arma principal: 10 fases, geracao procedural, chefe final, loja de
+    itens, minimapa e progresso salvo no navegador.
+
+    Repositorio original: https://github.com/KilledByAPixel/BounceBack
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bounce Back</title>
+<style>
+body
+{
+background:#000;
+overflow:hidden;
+margin:0;
+}
+canvas
+{
+width:100%;
+height:100%;
+image-rendering:-moz-crisp-edges;
+image-rendering:pixelated;
+}
+.voltar-overlay {
+  position: fixed; top: 10px; left: 10px; z-index: 10000;
+  text-decoration: none; font-weight: 700; color: #2563eb;
+  background: white; padding: 8px 16px; border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+}
+</style>
+</head>
+<body>
+<a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+<canvas id=c1></canvas>
+<canvas id=c2 style=visibility:hidden></canvas>
+<script src='gameEngine.js'></script>
+<script src='gameEngineDebug.js'></script>
+<script src='game.js'></script>
+</body>
+</html>

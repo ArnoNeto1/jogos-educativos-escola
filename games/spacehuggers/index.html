@@ -1,0 +1,51 @@
+<!--
+  Jogo original "Space Huggers", criado por Frank Force para a
+  competicao JS13k (github.com/KilledByAPixel/SpaceHuggers). Codigo e
+  tileset ("tiles.png") sob licenca GPLv3 (ver arquivo LICENSE nesta
+  pasta). Nota: o README do repositorio original inclui o aviso "This
+  game is only for learning purposes and not intended to be
+  redistributed!" - decisao consciente da escola de publicar mesmo
+  assim, dado que o codigo esta sob GPLv3 (que permite redistribuicao),
+  mantendo credito integral ao autor original.
+
+  Run-and-gun roguelike de plataforma com ambientes destrutiveis,
+  geracao procedural de niveis, propagacao de fogo e fisica de corpo
+  rigido. Traduzido para pt-BR.
+
+  Repositorio original: https://github.com/KilledByAPixel/SpaceHuggers
+-->
+<head>
+<title>Space Huggers</title>
+<link rel=icon type=image/x-icon href='favicon.ico'/>
+<meta name="title" content="Space Huggers"></meta>
+<meta name="author" content="Frank Force"></meta>
+<meta name="description" content="Um roguelike de tiro e plataforma com ambientes destrutíveis"></meta>
+<meta name=viewport content='width=device-width,initial-scale=1,user-scalable=0'>
+<meta charset=utf-8>
+<style>
+.voltar-overlay {
+  position: fixed; top: 10px; left: 10px; z-index: 10000;
+  text-decoration: none; font-weight: 700; color: #2563eb;
+  background: white; padding: 8px 16px; border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+}
+</style>
+</head>
+<body>
+<a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+<script src=engine/engineUtil.js></script>
+<script src=engine/engineDebug.js></script>
+<script src=engine/engine.js></script>
+<script src=engine/engineObject.js></script>
+<script src=engine/engineWebGL.js></script>
+<script src=engine/engineDraw.js></script>
+<script src=engine/engineInput.js></script>
+<script src=engine/engineAudio.js></script>
+<script src=engine/engineTileLayer.js></script>
+<script src=engine/engineParticle.js></script>
+<script src=appObjects.js></script>
+<script src=appCharacters.js></script>
+<script src=appEffects.js></script>
+<script src=appLevel.js></script>
+<script src=app.js></script>
+</body>
