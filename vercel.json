@@ -1,5 +1,11 @@
 {
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.plexe.com.br" }],
+      "destination": "https://plexe.com.br/:path*",
+      "permanent": true
+    },
     { "source": "/jogos", "destination": "/jogos/", "permanent": false }
   ],
   "rewrites": [
