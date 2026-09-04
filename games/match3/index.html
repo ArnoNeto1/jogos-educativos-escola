@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!--
+    Jogo original "Match-3 Game HTML5", criado por Rembound.com
+    (github.com/rembound/Match-3-Game-HTML5). Codigo sob licenca MIT
+    (ver arquivo LICENSE nesta pasta). Sem assets externos - as pecas
+    sao desenhadas via Canvas. Traduzido para pt-BR.
+    Repositorio original: https://github.com/rembound/Match-3-Game-HTML5
+  -->
+  <meta charset="UTF-8">
+  <title>Combine 3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #1a1a1a; display: flex; align-items: center; justify-content: center; }
+    canvas { max-width: 100%; max-height: 100%; }
+    .voltar-overlay {
+      position: fixed; top: 10px; left: 10px; z-index: 1000;
+      text-decoration: none; font-weight: 700; color: #2563eb;
+      background: white; padding: 8px 16px; border-radius: 999px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+    }
+  </style>
+  <script type='text/javascript' src='match3-example.js'></script>
+</head>
+<body>
+<a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+<canvas id="viewport" width="640" height="480"></canvas>
+</body>
+</html>

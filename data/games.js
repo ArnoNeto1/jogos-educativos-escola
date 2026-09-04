@@ -312,5 +312,37 @@ window.GAMES = [
     level: "Fundamental II • Estratégia single-player (em inglês)",
     icon: "🏰",
     file: "games/pillage-first/index.html"
+  },
+  {
+    id: "2048",
+    title: "2048",
+    subject: "Matemática",
+    level: "Fundamental I e II • Raciocínio lógico",
+    icon: "🔢",
+    file: "games/2048/index.html"
+  },
+  {
+    id: "match3",
+    title: "Combine 3",
+    subject: "Geral",
+    level: "Fundamental I • Raciocínio lógico",
+    icon: "💎",
+    file: "games/match3/index.html"
+  },
+  {
+    id: "sokoban",
+    title: "Sokoban",
+    subject: "Geral",
+    level: "Fundamental I e II • Raciocínio lógico",
+    icon: "📦",
+    file: "games/sokoban/index.html"
+  },
+  {
+    id: "tower-defense",
+    title: "Defesa de Torres",
+    subject: "Geral",
+    level: "Fundamental II • Estratégia",
+    icon: "🗼",
+    file: "games/tower-defense/index.html"
   }
 ];

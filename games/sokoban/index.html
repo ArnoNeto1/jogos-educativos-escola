@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <!--
+      Jogo original "Sokoban.js", criado por Tania Rascia
+      (github.com/taniarascia/sokoban). Codigo sob licenca MIT (ver
+      arquivo LICENSE nesta pasta). Sem assets externos - as pecas sao
+      desenhadas via Canvas. Traduzido para pt-BR; o repositorio original
+      trazia so 1 fase pronta (era um projeto-tutorial) - adicionamos
+      mais 2 fases (facil e medio) e progressao entre fases; a fase 3
+      (dificil) e a fase original do autor.
+      Repositorio original: https://github.com/taniarascia/sokoban
+    -->
+    <meta charset="utf-8">
+    <title>Sokoban</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+    <header>
+      <h1>Sokoban</h1>
+      <p id="level-label">Fase 1 - Fácil</p>
+      <button id="action-button" type="button">Reiniciar fase</button>
+    </header>
+
+    <canvas></canvas>
+  </body>
+
+  <script type="module" src="constants.js"></script>
+  <script type="module" src="utils.js"></script>
+  <script type="module" src="Sokoban.js"></script>
+  <script type="module" src="script.js"></script>
+</html>

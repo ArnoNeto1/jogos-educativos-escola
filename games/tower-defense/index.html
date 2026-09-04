@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<!--
+	  Jogo original "HTML5 Tower Defense", criado por oldj
+	  (github.com/oldj/html5-tower-defense). Codigo sob licenca MIT (ver
+	  arquivo LICENSE.md nesta pasta). Sem imagens - tudo desenhado via
+	  Canvas/HTML5. Interface original em chines; traduzida aqui para
+	  pt-BR (novo arquivo js/td-msg-pt.js baseado no td-msg-en.js
+	  original, que ja existia no repositorio).
+	  Repositorio original: https://github.com/oldj/html5-tower-defense
+	-->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=1.0, user-scalable=yes">
+	<title>Defesa de Torres</title>
+	<link href="css/c.css" rel="stylesheet" media="screen">
+	<style>
+	  .voltar-overlay {
+	    position: fixed; top: 10px; left: 10px; z-index: 1000;
+	    text-decoration: none; font-weight: 700; color: #2563eb;
+	    background: white; padding: 8px 16px; border-radius: 999px;
+	    box-shadow: 0 4px 10px rgba(0,0,0,0.18); font-family: Arial, sans-serif; font-size: 14px;
+	  }
+	</style>
+</head>
+
+<body id="tower-defense">
+<a class="voltar-overlay" href="../../index.html">⬅ Voltar</a>
+<div id="wrapper">
+	<div id="td-wrapper">
+		<h1>Defesa de Torres</h1>
+
+		<div id="td-loading">Carregando...</div>
+		<div id="td-board">
+			<canvas id="td-canvas">Desculpe, seu navegador não suporta o elemento HTML5 Canvas. Use um navegador atual (Chrome, Firefox, Edge) para jogar.</canvas>
+		</div>
+	</div>
+	<div id="about">
+		<a href="http://oldj.net/article/html5-tower-defense/" target="_blank">Sobre o jogo original</a> |
+		<a href="https://github.com/oldj/html5-tower-defense" target="_blank">Código fonte</a> |
+		criado por oldj.net &copy; 2010-2011
+	</div>
+</div>
+
+<script type="text/javascript" src="js/td.js"></script>
+<script type="text/javascript" src="js/td-lang.js"></script>
+<script type="text/javascript" src="js/td-event.js"></script>
+<script type="text/javascript" src="js/td-stage.js"></script>
+<script type="text/javascript" src="js/td-element.js"></script>
+<script type="text/javascript" src="js/td-obj-map.js"></script>
+<script type="text/javascript" src="js/td-obj-grid.js"></script>
+<script type="text/javascript" src="js/td-obj-building.js"></script>
+<script type="text/javascript" src="js/td-obj-monster.js"></script>
+<script type="text/javascript" src="js/td-obj-panel.js"></script>
+<script type="text/javascript" src="js/td-data-stage-1.js"></script>
+<script type="text/javascript" src="js/td-cfg-buildings.js"></script>
+<script type="text/javascript" src="js/td-cfg-monsters.js"></script>
+<script type="text/javascript" src="js/td-render-buildings.js"></script>
+<script type="text/javascript" src="js/td-msg-pt.js"></script>
+<script type="text/javascript" src="js/td-walk.js"></script>
+
+<script type="text/javascript">
+	window.onload = function () {
+		_TD.init("td-board", false);
+		document.getElementById("td-loading").style.display = "none";
+		document.getElementById("td-board").style.display = "block";
+	};
+</script>
+</body>
+</html>
