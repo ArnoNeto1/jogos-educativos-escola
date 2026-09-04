@@ -279,7 +279,7 @@ window.GAMES = [
     subject: "Geral",
     level: "Fundamental I e II • Reflexo",
     icon: "⚡",
-    file: "https://duelo-relampago.lovable.app"
+    file: "games/duelo-relampago/index.html"
   },
   {
     id: "vila-feliz",
@@ -287,7 +287,7 @@ window.GAMES = [
     subject: "Geral",
     level: "Fundamental I e II • Gestão/Construção",
     icon: "🏡",
-    file: "https://vila-feliz.lovable.app"
+    file: "games/vila-feliz/index.html"
   },
   {
     id: "isocity",
@@ -439,6 +439,6 @@ window.GAMES = [
     subject: "Geral",
     level: "Fundamental I e II • Raciocínio lógico (em inglês)",
     icon: "🔧",
-    file: "games/hexapipes/index.html"
+    file: "games/hexapipes/"
   }
 ];
