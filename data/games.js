@@ -464,5 +464,13 @@ window.GAMES = [
     level: "Fundamental I e II • Voo/Estratégia",
     icon: "✈️",
     file: "games/flight-of-harmony/index.html"
+  },
+  {
+    id: "sol-e-lua",
+    title: "Sol e Lua",
+    subject: "Geral",
+    level: "Fundamental I e II • Plataforma 3D cooperativo",
+    icon: "🌗",
+    file: "games/sol-e-lua/index.html"
   }
 ];
